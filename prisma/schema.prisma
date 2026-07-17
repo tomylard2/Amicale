@@ -1,0 +1,97 @@
+// Schéma de la base de données — Amicale des Pompiers de Châteaubourg
+// Doc : https://pris.ly/d/prisma-schema
+//
+// NOTE : les champs "role" et "statut" sont volontairement des chaînes de
+// caractères (et non des enums natifs) afin de garder le schéma portable
+// entre SQLite (développement) et PostgreSQL (production). Les valeurs
+// autorisées sont validées au niveau applicatif avec Zod (src/lib/constants).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Compte membre de l'amicale (rôle USER) ou administrateur (rôle ADMIN)
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  nom          String
+  prenom       String
+  telephone    String?
+  passwordHash String
+  role         String   @default("USER") // USER | ADMIN
+  isActive     Boolean  @default(true) // false = compte désactivé par l'admin
+  isApproved   Boolean  @default(false) // false = en attente de validation admin
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reservations Reservation[]
+
+  @@index([email])
+}
+
+/// Matériel mis à disposition (tables, bancs, tonnelles, enceintes, ...)
+model Equipment {
+  id             String   @id @default(cuid())
+  nom            String
+  description    String?
+  photoUrl       String?
+  quantiteTotale Int      @default(1)
+  caution        Float? // caution en euros (optionnelle)
+  isActive       Boolean  @default(true) // false = retiré du catalogue
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  reservationItems ReservationItem[]
+  blockedPeriods   BlockedPeriod[]
+}
+
+/// Une réservation regroupe plusieurs matériels sur une même période
+model Reservation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateDebut DateTime // premier jour d'utilisation (inclus)
+  dateFin   DateTime // dernier jour d'utilisation (inclus)
+  statut    String   @default("EN_ATTENTE") // EN_ATTENTE | CONFIRMEE | ANNULEE | TERMINEE
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items ReservationItem[]
+
+  @@index([userId])
+  @@index([dateDebut, dateFin])
+  @@index([statut])
+}
+
+/// Ligne de réservation : quel matériel, en quelle quantité
+model ReservationItem {
+  id            String      @id @default(cuid())
+  reservationId String
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  equipmentId   String
+  equipment     Equipment   @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  quantite      Int
+
+  @@index([reservationId])
+  @@index([equipmentId])
+}
+
+/// Période d'indisponibilité (week-end bloqué, maintenance, manifestation).
+/// equipmentId null = tout le matériel est bloqué sur la période.
+model BlockedPeriod {
+  id          String     @id @default(cuid())
+  dateDebut   DateTime
+  dateFin     DateTime
+  motif       String
+  equipmentId String? // null = concerne tout le matériel
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+
+  @@index([dateDebut, dateFin])
+}
