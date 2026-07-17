@@ -4,14 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node -e \"process.chdir(process.env.INIT_CWD||process.cwd());require('child_process').execSync('npx next build',{stdio:'inherit'})\"",
     "start": "next start",
     "start:prod": "node server.js",
     "lint": "eslint",
-    "postinstall": "echo POSTINSTALL_CWD=$(pwd) && echo INIT_CWD=$INIT_CWD && prisma generate --schema=\"$INIT_CWD/prisma/schema.prisma\"",
-    "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio",
-    "db:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma"
+    "postinstall": "node -e \"process.chdir(process.env.INIT_CWD||process.cwd());require('child_process').execSync('npx prisma generate --schema=./prisma/schema.prisma',{stdio:'inherit'})\"",
+    "db:seed": "node -e \"process.chdir(process.env.INIT_CWD||process.cwd());require('child_process').execSync('npx tsx prisma/seed.ts',{stdio:'inherit'})\"",
+    "db:studio": "node -e \"process.chdir(process.env.INIT_CWD||process.cwd());require('child_process').execSync('npx prisma studio',{stdio:'inherit'})\"",
+    "db:deploy": "node -e \"process.chdir(process.env.INIT_CWD||process.cwd());require('child_process').execSync('npx prisma migrate deploy --schema=./prisma/schema.prisma',{stdio:'inherit'})\""
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
