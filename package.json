@@ -8,7 +8,7 @@
     "start": "next start",
     "start:prod": "node server.js",
     "lint": "eslint",
-    "postinstall": "prisma generate --schema=./prisma/schema.prisma",
+    "postinstall": "echo POSTINSTALL_CWD=$(pwd) && echo INIT_CWD=$INIT_CWD && prisma generate --schema=\"$INIT_CWD/prisma/schema.prisma\"",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma"
