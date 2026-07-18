@@ -8,6 +8,8 @@ import { requireApprovedUser } from "@/lib/auth-guards";
 import { computeAvailability } from "@/lib/availability";
 import { parseDateInput, todayInput } from "@/lib/dates";
 import { RESERVATION_STATUS, ROLES } from "@/lib/constants";
+import { sendEmail, siteUrl } from "@/lib/email";
+import { formatDateLongue } from "@/lib/utils";
 
 export type ReservationState = {
   error?: string;
@@ -222,7 +224,10 @@ export async function cancelReservation(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
-  const existing = await prisma.reservation.findUnique({ where: { id } });
+  const existing = await prisma.reservation.findUnique({
+    where: { id },
+    include: { user: true },
+  });
   if (!existing) return;
   if (existing.userId !== session.user.id && !isAdmin) return;
 
@@ -237,4 +242,17 @@ export async function cancelReservation(formData: FormData): Promise<void> {
 
   revalidatePath("/espace/reservations");
   revalidatePath(`/espace/reservations/${id}`);
+
+  // Notifier le membre uniquement si c'est l'admin qui annule à sa place.
+  if (isAdmin && existing.userId !== session.user.id) {
+    await sendEmail({
+      to: existing.user.email,
+      subject: "Votre réservation a été annulée",
+      html: `
+        <p>Bonjour ${existing.user.prenom},</p>
+        <p>Votre réservation du ${formatDateLongue(existing.dateDebut)} au ${formatDateLongue(existing.dateFin)} a été annulée par un administrateur.</p>
+        <p><a href="${siteUrl()}/espace/reservations/${id}">Voir ma réservation</a></p>
+      `,
+    });
+  }
 }

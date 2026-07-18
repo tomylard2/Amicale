@@ -76,9 +76,11 @@ Toujours dans l'écran de l'application Node.js, section
 | `AUTH_URL` | `https://www.amicale-pompier-chateaubourg.fr` |
 | `ADMIN_EMAIL` | `tom.lardeux@bt-blue.com` |
 | `NODE_ENV` | `production` |
+| `GMAIL_USER` | `reservationamicalechateaubourg@gmail.com` |
+| `GMAIL_APP_PASSWORD` | mot de passe d'application Gmail (voir myaccount.google.com/apppasswords) |
 
-> `RESEND_API_KEY` et `EMAIL_FROM` seront ajoutés à la Phase 8 (e-mails).
 > Remplacez `VOTRE_LOGIN` par votre identifiant o2switch.
+> Après `npm install --include=dev`, les paquets de développement sont bien installés même avec `NODE_ENV=production`.
 
 ---
 
@@ -89,12 +91,23 @@ Dans l'écran de l'application Node.js, copiez la commande
 en SSH puis collez-la. Ensuite, depuis `~/amicale-pompiers` :
 
 ```bash
-npm install                 # installe les dépendances (+ génère Prisma)
+npm install --include=dev   # installe TOUTES les dépendances (+ génère Prisma)
 npm run db:deploy           # crée la base et applique les migrations
 npm run build               # construit l'application pour la production
+export DATABASE_URL="file:/home/VOTRE_LOGIN/amicale-data/prod.db"
+export ADMIN_EMAIL="tom.lardeux@bt-blue.com"
 npm run db:seed             # crée le compte administrateur initial
 ```
 
+> `--include=dev` est indispensable : `NODE_ENV=production` (variable
+> d'environnement de l'app) fait sinon sauter l'installation des paquets de
+> développement (Tailwind, TypeScript...) pourtant nécessaires pour construire
+> le site.
+>
+> Les variables d'environnement définies dans *Setup Node.js App* ne sont
+> disponibles que pour l'application en ligne, pas dans ce terminal SSH —
+> d'où les `export` avant `db:seed`.
+>
 > `db:seed` affiche l'e-mail et le mot de passe de l'admin — **changez ce mot
 > de passe** après la première connexion.
 
@@ -121,10 +134,10 @@ fournit le **certificat SSL (HTTPS)** automatiquement (Let's Encrypt).
 Après chaque modification du code :
 
 ```bash
-# en SSH, dans ~/amicale-pompiers, environnement Node activé
-git pull                 # (si méthode Git) sinon renvoyer les fichiers
-npm install
-npm run db:deploy        # applique d'éventuelles nouvelles migrations
+# en SSH, dans le dossier de l'application, environnement Node activé
+git pull                    # (si méthode Git) sinon renvoyer les fichiers
+npm install --include=dev
+npm run db:deploy           # applique d'éventuelles nouvelles migrations
 npm run build
 ```
 
@@ -146,3 +159,21 @@ Puis *Restart* l'application dans cPanel.
   déplacera aussi hors de l'app, comme la base).
 - **Page blanche / erreur 503** : consultez les logs dans *Setup Node.js App*
   et vérifiez que le fichier de démarrage est bien `server.js` et Node ≥ 20.
+- **`npm install`/`npm run` semble s'exécuter dans le mauvais dossier**
+  (erreurs "file not found" sur des fichiers pourtant présents) : le
+  `node_modules` créé par cPanel est un lien symbolique vers
+  `~/nodevenv/.../lib/node_modules`, ce qui perturbe la détection du dossier
+  de travail par npm. Déjà corrigé dans `package.json` (les scripts se
+  replacent explicitement dans `INIT_CWD`) — si le problème réapparaît sur un
+  nouveau script, appliquez le même principe.
+- **Erreur "Symlink node_modules ... points out of the filesystem root"** :
+  Turbopack refuse ce lien symbolique. `npm run build` utilise déjà
+  `next build --webpack` pour l'éviter.
+- **"Out of memory: Cannot allocate Wasm memory" pendant `npm run build`** :
+  l'hébergement impose une limite mémoire stricte (LVE CloudLinux, ~4 Go)
+  qui peut être dépassée si le build lance trop de workers en parallèle.
+  Déjà corrigé via `experimental.cpus: 1` dans `next.config.ts`.
+- **`npm run db:seed` échoue avec "Environment variable not found:
+  DATABASE_URL"** : les variables de *Setup Node.js App* ne s'appliquent
+  qu'à l'application en ligne, pas au terminal SSH. Il faut les `export`
+  manuellement avant de lancer la commande (voir étape 6).

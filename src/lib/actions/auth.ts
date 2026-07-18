@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { registerSchema, fieldErrorsFrom } from "@/lib/validations";
 import { ROLES } from "@/lib/constants";
+import { sendEmail, siteUrl } from "@/lib/email";
 
 export type RegisterState = {
   error?: string;
@@ -51,6 +52,17 @@ export async function registerAction(
       isActive: true,
     },
   });
+
+  if (process.env.ADMIN_EMAIL) {
+    await sendEmail({
+      to: process.env.ADMIN_EMAIL,
+      subject: "Nouvelle inscription à valider",
+      html: `
+        <p>${prenom} ${nom} (${email}) vient de créer un compte et attend une validation.</p>
+        <p><a href="${siteUrl()}/admin/utilisateurs">Voir les comptes en attente</a></p>
+      `,
+    });
+  }
 
   return { success: true };
 }

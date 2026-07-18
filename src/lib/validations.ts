@@ -67,6 +67,25 @@ export const adminCreateUserSchema = z.object({
 
 export type AdminCreateUserInput = z.infer<typeof adminCreateUserSchema>;
 
+/** Validation de la demande de réinitialisation de mot de passe */
+export const requestPasswordResetSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Adresse e-mail invalide"),
+});
+
+/** Validation du choix d'un nouveau mot de passe */
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1),
+    password: z
+      .string()
+      .min(8, "Le mot de passe doit contenir au moins 8 caractères"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Les mots de passe ne correspondent pas",
+    path: ["confirmPassword"],
+  });
+
 /** Validation des données d'un matériel (hors photo, gérée séparément) */
 export const equipmentSchema = z.object({
   nom: z.string().trim().min(2, "Le nom est requis"),

@@ -30,6 +30,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   reservations Reservation[]
+  resetTokens  PasswordResetToken[]
 
   @@index([email])
 }
@@ -80,6 +81,19 @@ model ReservationItem {
 
   @@index([reservationId])
   @@index([equipmentId])
+}
+
+/// Jeton temporaire de réinitialisation de mot de passe, envoyé par e-mail.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 /// Période d'indisponibilité (week-end bloqué, maintenance, manifestation).
