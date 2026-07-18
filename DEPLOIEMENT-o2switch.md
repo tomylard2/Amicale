@@ -173,6 +173,12 @@ Puis *Restart* l'application dans cPanel.
   l'hébergement impose une limite mémoire stricte (LVE CloudLinux, ~4 Go)
   qui peut être dépassée si le build lance trop de workers en parallèle.
   Déjà corrigé via `experimental.cpus: 1` dans `next.config.ts`.
+- **"ThreadPoolBuildError ... Resource temporarily unavailable" (panic Rust)
+  pendant `npm run build`** : le compilateur SWC (natif, Rust) dimensionne
+  son pool de threads sur le nombre de CPU détectés sur la machine physique,
+  ce qui dépasse la limite réelle de threads/process du compte LVE (même si
+  `ulimit`/`/proc/PID/limits` l'affiche "unlimited"). Déjà corrigé en fixant
+  `RAYON_NUM_THREADS=1` dans le script `build` de `package.json`.
 - **`npm run db:seed` échoue avec "Environment variable not found:
   DATABASE_URL"** : les variables de *Setup Node.js App* ne s'appliquent
   qu'à l'application en ligne, pas au terminal SSH. Il faut les `export`
