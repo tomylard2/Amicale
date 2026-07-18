@@ -174,12 +174,39 @@ Puis *Restart* l'application dans cPanel.
   qui peut être dépassée si le build lance trop de workers en parallèle.
   Déjà corrigé via `experimental.cpus: 1` dans `next.config.ts`.
 - **"ThreadPoolBuildError ... Resource temporarily unavailable" (panic Rust)
-  pendant `npm run build`** : le compilateur SWC (natif, Rust) dimensionne
-  son pool de threads sur le nombre de CPU détectés sur la machine physique,
-  ce qui dépasse la limite réelle de threads/process du compte LVE (même si
-  `ulimit`/`/proc/PID/limits` l'affiche "unlimited"). Déjà corrigé en fixant
-  `RAYON_NUM_THREADS=1` dans le script `build` de `package.json`.
+  pendant `npm run build`**, persistant même avec `RAYON_NUM_THREADS=1` et
+  une pile réduite (`ulimit -s`) : la vraie cause est une limite LVE
+  (nombre de processus/threads) invisible depuis le compte (n'apparaît ni
+  dans `ulimit -a` ni dans `/proc/PID/limits`), trop basse pour que le
+  compilateur natif (Rust/SWC) puisse même démarrer un seul thread. Seul
+  o2switch peut l'augmenter (ticket support, demander la limite "Number of
+  Processes" du LVE Manager). **En attendant**, voir "Construire en local"
+  ci-dessous.
 - **`npm run db:seed` échoue avec "Environment variable not found:
   DATABASE_URL"** : les variables de *Setup Node.js App* ne s'appliquent
   qu'à l'application en ligne, pas au terminal SSH. Il faut les `export`
   manuellement avant de lancer la commande (voir étape 6).
+
+---
+
+## Construire en local (si `npm run build` échoue sur le serveur)
+
+Tant que la limite LVE n'est pas augmentée par o2switch, on peut construire
+l'application sur un PC (où ça fonctionne) et envoyer seulement le résultat.
+
+1. Sur le PC : `npm run build`, puis compresser le dossier `.next` **sans**
+   son sous-dossier `cache` (inutile en production, mais représente ~95% de
+   la taille) dans `next-build.zip`.
+2. Envoyer `next-build.zip` dans le dossier de l'app via cPanel →
+   *Gestionnaire de fichiers* → Upload.
+3. En SSH :
+   ```bash
+   rm -rf .next
+   unzip next-build.zip -d .next
+   rm next-build.zip
+   # Un zip fait sous Windows perd les droits Unix : sans ça, l'app plante
+   # au démarrage avec "EACCES: permission denied" sur les fichiers .next.
+   find .next -type d -exec chmod 755 {} \;
+   find .next -type f -exec chmod 644 {} \;
+   ```
+4. *Setup Node.js App* → **Restart**.
