@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Navbar, type NavLink } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
 import { ROLES } from "@/lib/constants";
 
 const adminLinks: NavLink[] = [
@@ -29,6 +30,7 @@ export default async function AdminLayout({
         secondaryLink={{ href: "/espace", label: "Vue membre" }}
       />
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <Footer />
     </div>
   );
 }

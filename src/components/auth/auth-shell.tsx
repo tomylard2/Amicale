@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,18 @@ export function AuthShell({
         </div>
         {children}
       </div>
+      <footer className="absolute bottom-4 inset-x-0 text-center text-xs text-slate-400">
+        <Link href="/mentions-legales" className="hover:text-white underline underline-offset-2">
+          Mentions légales
+        </Link>
+        <span className="mx-2">·</span>
+        <Link
+          href="/politique-de-confidentialite"
+          className="hover:text-white underline underline-offset-2"
+        >
+          Politique de confidentialité
+        </Link>
+      </footer>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Navbar, type NavLink } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
 
 const memberLinks: NavLink[] = [
   { href: "/espace", label: "Tableau de bord" },
@@ -37,6 +38,7 @@ export default async function EspaceLayout({
         }
       />
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <Footer />
     </div>
   );
 }
