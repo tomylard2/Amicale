@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-guards";
 import { ROLES } from "@/lib/constants";
 import { adminCreateUserSchema, fieldErrorsFrom } from "@/lib/validations";
+import { sendEmail } from "@/lib/email";
 
 export type CreateUserState = {
   error?: string;
@@ -93,12 +94,20 @@ export async function approveUser(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
-  await prisma.user.update({
+  const user = await prisma.user.update({
     where: { id },
     data: { isApproved: true, isActive: true },
   });
   revalidatePath("/admin/utilisateurs");
   revalidatePath("/admin");
+
+  if (process.env.GMAIL_USER) {
+    await sendEmail({
+      to: process.env.GMAIL_USER,
+      subject: "Compte membre approuvé",
+      html: `<p>Le compte de ${user.prenom} ${user.nom} (${user.email}) vient d'être approuvé.</p>`,
+    });
+  }
 }
 
 /** Active / désactive un compte membre. */

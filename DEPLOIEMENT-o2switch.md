@@ -74,10 +74,11 @@ Toujours dans l'écran de l'application Node.js, section
 | `DATABASE_URL` | `file:/home/VOTRE_LOGIN/amicale-data/prod.db` |
 | `AUTH_SECRET` | le secret généré à l'étape 1 |
 | `AUTH_URL` | `https://www.amicale-pompier-chateaubourg.fr` |
-| `ADMIN_EMAIL` | `tom.lardeux@bt-blue.com` |
+| `ADMIN_EMAIL` | `tom.lardeux@bt-blue.com` (identifiant de connexion du compte admin, pas une adresse de notification) |
 | `NODE_ENV` | `production` |
 | `GMAIL_USER` | `reservationamicalechateaubourg@gmail.com` |
 | `GMAIL_APP_PASSWORD` | mot de passe d'application Gmail (voir myaccount.google.com/apppasswords) |
+| `SIGNUP_ALERT_EMAIL` | `tomy.lardeux@gmail.com` (reçoit l'alerte de nouvelle inscription) |
 
 > Remplacez `VOTRE_LOGIN` par votre identifiant o2switch.
 > Après `npm install --include=dev`, les paquets de développement sont bien installés même avec `NODE_ENV=production`.

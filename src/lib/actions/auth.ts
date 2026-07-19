@@ -53,9 +53,9 @@ export async function registerAction(
     },
   });
 
-  if (process.env.ADMIN_EMAIL) {
+  if (process.env.SIGNUP_ALERT_EMAIL) {
     await sendEmail({
-      to: process.env.ADMIN_EMAIL,
+      to: process.env.SIGNUP_ALERT_EMAIL,
       subject: "Nouvelle inscription à valider",
       html: `
         <p>${prenom} ${nom} (${email}) vient de créer un compte et attend une validation.</p>

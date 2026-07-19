@@ -108,6 +108,18 @@ export async function createReservation(
   }
 
   revalidatePath("/espace/reservations");
+
+  if (process.env.GMAIL_USER) {
+    await sendEmail({
+      to: process.env.GMAIL_USER,
+      subject: "Nouvelle demande de réservation",
+      html: `
+        <p>${session.user.name} (${session.user.email}) vient de faire une nouvelle demande de réservation, du ${formatDateLongue(dateDebut)} au ${formatDateLongue(dateFin)}.</p>
+        <p><a href="${siteUrl()}/admin/reservations?statut=EN_ATTENTE">Voir les réservations en attente</a></p>
+      `,
+    });
+  }
+
   redirect("/espace/reservations?success=1");
 }
 

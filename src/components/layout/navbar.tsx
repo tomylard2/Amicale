@@ -22,9 +22,12 @@ export function Navbar({
     <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
       <div className="mx-auto max-w-6xl px-4 h-14 flex items-center justify-between gap-4">
         <Link href={homeHref} className="flex items-center gap-2 shrink-0">
-          <span className="text-xl" aria-hidden>
-            🚒
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/logo.png"
+            alt="Amicale des Sapeurs-Pompiers de Châteaubourg"
+            className="h-9 w-9 rounded-full"
+          />
           <span className="hidden sm:flex items-stretch text-sm font-extrabold">
             <span className="bg-primary px-1.5 rounded-l">SAPEURS</span>
             <span className="bg-white text-slate-900 px-1.5 rounded-r">
