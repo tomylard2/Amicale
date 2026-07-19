@@ -110,6 +110,14 @@ export function ReservationBuilder({
                     <p className="text-sm text-success">
                       {item.available} disponible{item.available > 1 ? "s" : ""}
                     </p>
+                    {item.prix > 0 && (
+                      <p className="text-xs font-medium">
+                        Prix :{" "}
+                        {item.prixExponentiel
+                          ? `${formatEuros(item.prix)} / unité`
+                          : `${formatEuros(item.prix)} (forfait, quelle que soit la quantité)`}
+                      </p>
+                    )}
                     {item.caution != null && (
                       <p className="text-xs text-muted-foreground">
                         Caution unitaire : {formatEuros(item.caution)}
