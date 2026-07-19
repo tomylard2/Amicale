@@ -86,6 +86,27 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
+/** Validation d'une facture (lignes saisies manuellement) */
+export const invoiceItemSchema = z.object({
+  description: z.string().trim().min(1, "Description requise"),
+  quantite: z.coerce.number().int().min(1).default(1),
+  montant: z.coerce.number({ message: "Montant invalide" }).min(0, "Le montant ne peut pas être négatif"),
+});
+
+export const invoiceSchema = z.object({
+  reservationId: z.string().optional().or(z.literal("")),
+  clientNom: z.string().trim().min(2, "Le nom du client est requis"),
+  clientEmail: z.string().trim().toLowerCase().email("Adresse e-mail invalide"),
+  clientAdresse: z.string().trim().optional().or(z.literal("")),
+  notes: z.string().trim().max(1000).optional().or(z.literal("")),
+  caution: z.coerce.number().min(0).optional(),
+  items: z
+    .array(invoiceItemSchema)
+    .min(1, "Ajoutez au moins une ligne à la facture"),
+});
+
+export type InvoiceInput = z.infer<typeof invoiceSchema>;
+
 /** Validation des données d'un matériel (hors photo, gérée séparément) */
 export const equipmentSchema = z.object({
   nom: z.string().trim().min(2, "Le nom est requis"),

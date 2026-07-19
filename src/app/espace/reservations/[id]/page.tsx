@@ -137,6 +137,16 @@ export default async function ReservationDetailPage({
             : "Cette réservation ne peut plus être modifiée (déjà commencée ou terminée)."}
         </p>
       )}
+
+      {isAdmin && (
+        <div className="border-t border-border pt-4">
+          <Button asChild variant="outline">
+            <Link href={`/admin/factures/nouvelle?reservationId=${reservation.id}`}>
+              Créer une facture pour cette réservation
+            </Link>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

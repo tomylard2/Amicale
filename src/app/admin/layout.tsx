@@ -8,6 +8,7 @@ const adminLinks: NavLink[] = [
   { href: "/admin", label: "Tableau de bord" },
   { href: "/admin/materiel", label: "Matériel" },
   { href: "/admin/reservations", label: "Réservations" },
+  { href: "/admin/factures", label: "Factures" },
   { href: "/admin/indisponibilites", label: "Indisponibilités" },
   { href: "/admin/utilisateurs", label: "Utilisateurs" },
 ];

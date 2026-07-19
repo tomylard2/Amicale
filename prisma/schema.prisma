@@ -63,7 +63,8 @@ model Reservation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items ReservationItem[]
+  items    ReservationItem[]
+  invoices Invoice[]
 
   @@index([userId])
   @@index([dateDebut, dateFin])
@@ -94,6 +95,40 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+/// Facture éditée manuellement par un admin (client membre ou non, ex: une
+/// autre association qui loue du matériel). Les montants sont saisis à la
+/// main ligne par ligne, car les tarifs varient au cas par cas.
+model Invoice {
+  id            String    @id @default(cuid())
+  numero        String    @unique // ex: FACT-2026-001
+  reservationId String? // facultatif : lien vers une réservation existante
+  reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  clientNom     String
+  clientEmail   String
+  clientAdresse String?
+  notes         String?
+  caution       Float?
+  dateEmission  DateTime  @default(now())
+  sentAt        DateTime? // dernier envoi par e-mail
+  createdAt     DateTime  @default(now())
+
+  items InvoiceItem[]
+
+  @@index([reservationId])
+}
+
+/// Ligne de facture : description libre + montant saisi manuellement
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantite    Int     @default(1)
+  montant     Float // montant total de la ligne (pas un prix unitaire)
+
+  @@index([invoiceId])
 }
 
 /// Période d'indisponibilité (week-end bloqué, maintenance, manifestation).
