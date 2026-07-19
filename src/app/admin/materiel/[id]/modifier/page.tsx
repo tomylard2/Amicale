@@ -38,6 +38,8 @@ export default async function ModifierMaterielPage({
           description: equipment.description,
           quantiteTotale: equipment.quantiteTotale,
           caution: equipment.caution,
+          prix: equipment.prix,
+          prixExponentiel: equipment.prixExponentiel,
           photoUrl: equipment.photoUrl,
         }}
       />

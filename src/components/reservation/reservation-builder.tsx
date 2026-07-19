@@ -17,6 +17,8 @@ export type BuilderItem = {
   available: number;
   caution: number | null;
   quantiteTotale: number;
+  prix: number;
+  prixExponentiel: boolean;
 };
 
 type BuilderAction = (
@@ -58,6 +60,11 @@ export function ReservationBuilder({
   const totalCaution = items.reduce((sum, i) => {
     const q = quantities[i.id] ?? 0;
     return sum + q * (i.caution ?? 0);
+  }, 0);
+  const totalPrix = items.reduce((sum, i) => {
+    const q = quantities[i.id] ?? 0;
+    if (q === 0) return sum;
+    return sum + (i.prixExponentiel ? i.prix * q : i.prix);
   }, 0);
 
   return (
@@ -189,6 +196,11 @@ export function ReservationBuilder({
               <span className="font-medium">{totalItems}</span> article
               {totalItems > 1 ? "s" : ""} sélectionné{totalItems > 1 ? "s" : ""}
             </p>
+            {totalPrix > 0 && (
+              <p className="font-medium">
+                Total estimé : {formatEuros(totalPrix)}
+              </p>
+            )}
             {totalCaution > 0 && (
               <p className="text-muted-foreground">
                 Caution totale estimée : {formatEuros(totalCaution)}

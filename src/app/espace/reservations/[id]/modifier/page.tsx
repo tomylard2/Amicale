@@ -73,6 +73,8 @@ export default async function ModifierReservationPage({
     available: a.available,
     caution: a.equipment.caution,
     quantiteTotale: a.equipment.quantiteTotale,
+    prix: a.equipment.prix,
+    prixExponentiel: a.equipment.prixExponentiel,
   }));
 
   const initialQuantities: Record<string, number> = {};

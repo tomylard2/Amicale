@@ -119,6 +119,10 @@ export const equipmentSchema = z.object({
     .number({ message: "Caution invalide" })
     .min(0, "La caution ne peut pas être négative")
     .optional(),
+  prix: z.coerce
+    .number({ message: "Prix invalide" })
+    .min(0, "Le prix ne peut pas être négatif")
+    .default(0),
 });
 
 export type EquipmentInput = z.infer<typeof equipmentSchema>;

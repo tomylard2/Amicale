@@ -32,7 +32,9 @@ export default async function NouvelleFacturePage({
     initialItems = reservation.items.map((it) => ({
       description: it.equipment.nom,
       quantite: it.quantite,
-      montant: 0,
+      montant: it.equipment.prixExponentiel
+        ? it.equipment.prix * it.quantite
+        : it.equipment.prix,
     }));
   }
 
@@ -42,7 +44,7 @@ export default async function NouvelleFacturePage({
         <h1 className="text-2xl font-bold">Nouvelle facture</h1>
         <p className="text-muted-foreground mt-1">
           {reservationId
-            ? "Les lignes ont été pré-remplies depuis la réservation ; pensez à saisir les montants."
+            ? "Les lignes et montants ont été pré-remplis depuis la réservation ; vérifiez avant d'envoyer."
             : "Saisissez les informations du client et les lignes de la facture."}
         </p>
       </div>

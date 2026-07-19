@@ -43,6 +43,10 @@ model Equipment {
   photoUrl       String?
   quantiteTotale Int      @default(1)
   caution        Float? // caution en euros (optionnelle)
+  prix           Float    @default(0) // prix de location en euros (0 = gratuit)
+  // true : le prix est multiplié par la quantité (ex : 20€ x nb de barnums)
+  // false : prix fixe quelle que soit la quantité (ex : 5€ le lot, peu importe combien)
+  prixExponentiel Boolean @default(true)
   isActive       Boolean  @default(true) // false = retiré du catalogue
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

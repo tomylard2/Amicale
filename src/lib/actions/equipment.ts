@@ -19,6 +19,7 @@ function parseFields(formData: FormData) {
     description: formData.get("description"),
     quantiteTotale: formData.get("quantiteTotale"),
     caution: formData.get("caution") || undefined,
+    prix: formData.get("prix") || undefined,
   });
 }
 
@@ -33,7 +34,8 @@ export async function createEquipment(
   if (!parsed.success) {
     return { fieldErrors: fieldErrorsFrom(parsed.error) };
   }
-  const { nom, description, quantiteTotale, caution } = parsed.data;
+  const { nom, description, quantiteTotale, caution, prix } = parsed.data;
+  const prixExponentiel = formData.get("prixExponentiel") === "on";
 
   // Photo (facultative)
   let photoUrl: string | null = null;
@@ -50,6 +52,8 @@ export async function createEquipment(
       description: description || null,
       quantiteTotale,
       caution: caution ?? null,
+      prix,
+      prixExponentiel,
       photoUrl,
     },
   });
@@ -75,7 +79,8 @@ export async function updateEquipment(
   if (!parsed.success) {
     return { fieldErrors: fieldErrorsFrom(parsed.error) };
   }
-  const { nom, description, quantiteTotale, caution } = parsed.data;
+  const { nom, description, quantiteTotale, caution, prix } = parsed.data;
+  const prixExponentiel = formData.get("prixExponentiel") === "on";
 
   let photoUrl = existing.photoUrl;
   const photo = formData.get("photo");
@@ -94,6 +99,8 @@ export async function updateEquipment(
       description: description || null,
       quantiteTotale,
       caution: caution ?? null,
+      prix,
+      prixExponentiel,
       photoUrl,
     },
   });

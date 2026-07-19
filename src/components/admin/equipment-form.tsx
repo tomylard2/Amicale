@@ -13,6 +13,8 @@ type EquipmentInitial = {
   description?: string | null;
   quantiteTotale?: number;
   caution?: number | null;
+  prix?: number;
+  prixExponentiel?: boolean;
   photoUrl?: string | null;
 };
 
@@ -100,6 +102,32 @@ export function EquipmentForm({
           />
           <FieldError messages={state.fieldErrors?.caution} />
         </div>
+      </div>
+
+      <div>
+        <Label htmlFor="prix">Prix de location (€)</Label>
+        <Input
+          id="prix"
+          name="prix"
+          type="number"
+          min={0}
+          step="0.01"
+          defaultValue={initial?.prix ?? 0}
+        />
+        <FieldError messages={state.fieldErrors?.prix} />
+        <label className="mt-2 flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="prixExponentiel"
+            defaultChecked={initial?.prixExponentiel ?? true}
+            className="mt-0.5"
+          />
+          <span>
+            Exponentiel — le prix est multiplié par la quantité (ex : 20€ ×
+            2 barnums = 40€). Décochez pour un prix fixe quelle que soit la
+            quantité prise (ex : 5€ le lot, peu importe combien).
+          </span>
+        </label>
       </div>
 
       <div>
