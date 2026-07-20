@@ -211,3 +211,26 @@ l'application sur un PC (où ça fonctionne) et envoyer seulement le résultat.
    find .next -type f -exec chmod 644 {} \;
    ```
 4. *Setup Node.js App* → **Restart**.
+
+---
+
+## Sauvegarde automatique de la base de données
+
+Le script `scripts/backup-db.mjs` copie `prod.db` chaque jour dans
+`~/amicale-data/backups/` (purge des sauvegardes de plus de 35 jours) et
+envoie la sauvegarde par e-mail le 1er de chaque mois.
+
+**Ce script n'a pas besoin d'être redéployé** (il n'est pas dans `.next`) —
+un simple `git pull` suffit pour le mettre à jour.
+
+Les variables de *Setup Node.js App* ne sont pas disponibles pour une tâche
+planifiée (cron) : il faut les fournir directement dans la commande cron.
+
+1. cPanel → **Tâches Cron** (Cron Jobs).
+2. Fréquence : *Une fois par jour* (choisissez une heure creuse, ex. 3h du matin).
+3. Commande :
+   ```bash
+   DATABASE_URL="file:/home/VOTRE_LOGIN/amicale-data/prod.db" GMAIL_USER="reservationamicalechateaubourg@gmail.com" GMAIL_APP_PASSWORD="MOT_DE_PASSE_APPLICATION" BACKUP_EMAIL="reservationamicalechateaubourg@gmail.com" node /home/VOTRE_LOGIN/repositories/Amicale/scripts/backup-db.mjs >> /home/VOTRE_LOGIN/amicale-data/backup.log 2>&1
+   ```
+   Remplacez `VOTRE_LOGIN` et `MOT_DE_PASSE_APPLICATION` par les vraies valeurs.
+4. Test manuel possible en SSH avec la même commande (sans le cron).
