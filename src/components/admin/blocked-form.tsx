@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -23,10 +23,14 @@ export function BlockedPeriodForm({
   );
   const formRef = useRef<HTMLFormElement>(null);
   const today = todayInput();
+  const [toutLeMateriel, setToutLeMateriel] = useState(true);
 
   // Réinitialise le formulaire après un ajout réussi
   useEffect(() => {
-    if (state.success) formRef.current?.reset();
+    if (state.success) {
+      formRef.current?.reset();
+      setToutLeMateriel(true);
+    }
   }, [state.success]);
 
   return (
@@ -62,23 +66,38 @@ export function BlockedPeriodForm({
       </div>
 
       <div>
-        <Label htmlFor="equipmentId">Matériel concerné</Label>
-        <select
-          id="equipmentId"
-          name="equipmentId"
-          defaultValue=""
-          className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm"
-        >
-          <option value="">Tout le matériel</option>
-          {equipements.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.nom}
-            </option>
-          ))}
-        </select>
+        <Label>Matériel concerné</Label>
+        <input
+          type="hidden"
+          name="scope"
+          value={toutLeMateriel ? "tout" : "specifique"}
+        />
+
+        <label className="mt-1 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={toutLeMateriel}
+            onChange={(e) => setToutLeMateriel(e.target.checked)}
+          />
+          Tout le matériel
+        </label>
+
+        {!toutLeMateriel && (
+          <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-input p-2 space-y-1">
+            {equipements.map((e) => (
+              <label key={e.id} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="equipmentIds" value={e.id} />
+                {e.nom}
+              </label>
+            ))}
+          </div>
+        )}
+
         <p className="mt-1 text-xs text-muted-foreground">
-          Laissez « Tout le matériel » pour bloquer entièrement la période.
+          Décochez « Tout le matériel » pour sélectionner un ou plusieurs
+          matériels précis.
         </p>
+        <FieldError messages={state.fieldErrors?.equipmentIds} />
       </div>
 
       <Button type="submit" disabled={pending}>

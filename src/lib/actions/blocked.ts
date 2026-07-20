@@ -12,7 +12,11 @@ export type BlockedState = {
   success?: boolean;
 };
 
-/** Crée une période d'indisponibilité (tout le matériel ou un seul). */
+/**
+ * Crée une (ou plusieurs) période(s) d'indisponibilité : tout le matériel
+ * (une seule ligne, equipmentId null), ou un matériel par ligne sélectionnée
+ * dans "equipmentIds" (une ligne par matériel, mêmes dates/motif).
+ */
 export async function createBlockedPeriod(
   _prevState: BlockedState,
   formData: FormData,
@@ -22,7 +26,8 @@ export async function createBlockedPeriod(
   const debut = String(formData.get("dateDebut") ?? "");
   const fin = String(formData.get("dateFin") ?? "");
   const motif = String(formData.get("motif") ?? "").trim();
-  const equipmentIdRaw = String(formData.get("equipmentId") ?? "");
+  const scope = String(formData.get("scope") ?? "tout");
+  const equipmentIds = formData.getAll("equipmentIds").map(String).filter(Boolean);
 
   const parsed = reservationDatesSchema.safeParse({
     dateDebut: debut,
@@ -34,15 +39,31 @@ export async function createBlockedPeriod(
   if (motif.length < 2) {
     return { fieldErrors: { motif: ["Le motif est requis."] } };
   }
+  if (scope === "specifique" && equipmentIds.length === 0) {
+    return {
+      fieldErrors: {
+        equipmentIds: ["Sélectionnez au moins un matériel, ou cochez « Tout le matériel »."],
+      },
+    };
+  }
 
-  await prisma.blockedPeriod.create({
-    data: {
-      dateDebut: parseDateInput(debut),
-      dateFin: parseDateInput(fin),
-      motif,
-      equipmentId: equipmentIdRaw ? equipmentIdRaw : null,
-    },
-  });
+  const dateDebut = parseDateInput(debut);
+  const dateFin = parseDateInput(fin);
+
+  if (scope === "tout") {
+    await prisma.blockedPeriod.create({
+      data: { dateDebut, dateFin, motif, equipmentId: null },
+    });
+  } else {
+    await prisma.blockedPeriod.createMany({
+      data: equipmentIds.map((equipmentId) => ({
+        dateDebut,
+        dateFin,
+        motif,
+        equipmentId,
+      })),
+    });
+  }
 
   revalidatePath("/admin/indisponibilites");
   return { success: true };
