@@ -61,6 +61,14 @@ export function ReservationsCalendar({
     return `/admin/reservations?${params.toString()}`;
   }
 
+  /** Bascule vers la vue liste, filtrée sur les réservations actives ce jour-là. */
+  function dayHref(dateKey: string) {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(baseQuery)) if (v) params.set(k, v);
+    params.set("date", dateKey);
+    return `/admin/reservations?${params.toString()}`;
+  }
+
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between mb-4">
@@ -97,15 +105,11 @@ export function ReservationsCalendar({
             }
             const key = `${year}-${pad(monthIndex + 1)}-${pad(day)}`;
             const summary = byDay.get(key) ?? [];
-            return (
-              <div
-                key={`${wi}-${di}`}
-                className={`min-h-[72px] rounded-md border p-1 ${
-                  isToday(day) ? "border-primary bg-primary/5" : "border-border"
-                }`}
-              >
+            const hasReservations = summary.length > 0;
+            const dayContent = (
+              <>
                 <p className="text-[11px] font-medium mb-0.5">{day}</p>
-                {summary.length > 0 && (
+                {hasReservations && (
                   <ul className="space-y-0.5">
                     {summary.slice(0, 3).map((s) => (
                       <li
@@ -123,7 +127,23 @@ export function ReservationsCalendar({
                     )}
                   </ul>
                 )}
-              </div>
+              </>
+            );
+            const cellClass = `min-h-[72px] rounded-md border p-1 block ${
+              isToday(day) ? "border-primary bg-primary/5" : "border-border"
+            } ${hasReservations ? "hover:border-primary hover:bg-primary/5 cursor-pointer" : ""}`;
+
+            if (!hasReservations) {
+              return (
+                <div key={`${wi}-${di}`} className={cellClass}>
+                  {dayContent}
+                </div>
+              );
+            }
+            return (
+              <Link key={`${wi}-${di}`} href={dayHref(key)} className={cellClass}>
+                {dayContent}
+              </Link>
             );
           }),
         )}
