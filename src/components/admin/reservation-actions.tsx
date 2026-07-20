@@ -1,6 +1,7 @@
 "use client";
 
-import { confirmReservation } from "@/lib/actions/admin-reservations";
+import { useActionState } from "react";
+import { confirmReservation, deleteReservation } from "@/lib/actions/admin-reservations";
 
 export function ConfirmReservationButton({ id }: { id: string }) {
   return (
@@ -13,5 +14,32 @@ export function ConfirmReservationButton({ id }: { id: string }) {
         Accepter
       </button>
     </form>
+  );
+}
+
+export function DeleteReservationButton({ id }: { id: string }) {
+  const [state, formAction] = useActionState(deleteReservation, {});
+
+  return (
+    <div>
+      <form
+        action={formAction}
+        onSubmit={(e) => {
+          if (
+            !confirm(
+              "Supprimer définitivement cette réservation ? Cette action est irréversible.",
+            )
+          ) {
+            e.preventDefault();
+          }
+        }}
+      >
+        <input type="hidden" name="id" value={id} />
+        <button type="submit" className="text-sm text-danger hover:underline">
+          Supprimer
+        </button>
+      </form>
+      {state.error && <p className="mt-1 text-xs text-danger">{state.error}</p>}
+    </div>
   );
 }

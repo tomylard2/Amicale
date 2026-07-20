@@ -67,3 +67,37 @@ export async function confirmReservation(formData: FormData): Promise<void> {
     ],
   });
 }
+
+export type DeleteReservationState = { error?: string };
+
+/**
+ * Supprime définitivement une réservation (nettoyage de tests, doublons...).
+ * Réservée aux réservations déjà annulées ou terminées, pour éviter de
+ * supprimer par erreur une réservation encore active : il faut d'abord
+ * l'annuler.
+ */
+export async function deleteReservation(
+  _prevState: DeleteReservationState,
+  formData: FormData,
+): Promise<DeleteReservationState> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Réservation introuvable." };
+
+  const reservation = await prisma.reservation.findUnique({ where: { id } });
+  if (!reservation) return { error: "Réservation introuvable." };
+  if (
+    reservation.statut !== RESERVATION_STATUS.ANNULEE &&
+    reservation.statut !== RESERVATION_STATUS.TERMINEE
+  ) {
+    return {
+      error: "Annulez d'abord la réservation avant de pouvoir la supprimer.",
+    };
+  }
+
+  await prisma.reservation.delete({ where: { id } });
+  revalidatePath("/admin/reservations");
+  revalidatePath("/espace/reservations");
+  revalidatePath("/admin");
+  return {};
+}

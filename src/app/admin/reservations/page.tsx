@@ -4,7 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ConfirmReservationButton } from "@/components/admin/reservation-actions";
+import {
+  ConfirmReservationButton,
+  DeleteReservationButton,
+} from "@/components/admin/reservation-actions";
 import { CancelReservationButton } from "@/components/reservation/cancel-reservation-button";
 import {
   ReservationsCalendar,
@@ -292,6 +295,7 @@ export default async function AdminReservationsPage({
                         className="text-sm text-danger hover:underline"
                       />
                     )}
+                    {!modifiable && <DeleteReservationButton id={r.id} />}
                   </div>
                 </CardContent>
               </Card>
