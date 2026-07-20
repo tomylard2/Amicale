@@ -55,10 +55,10 @@ export default async function ReservationDetailPage({
     <div className="space-y-6 max-w-2xl">
       <div>
         <Link
-          href="/espace/reservations"
+          href={isAdmin ? "/admin/reservations" : "/espace/reservations"}
           className="text-sm text-muted-foreground hover:text-foreground"
         >
-          ← Retour à mes réservations
+          {isAdmin ? "← Retour aux réservations" : "← Retour à mes réservations"}
         </Link>
       </div>
 

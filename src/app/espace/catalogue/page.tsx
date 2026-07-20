@@ -63,8 +63,16 @@ export default async function CataloguePage() {
                     {m.description}
                   </p>
                 )}
+                {m.prix > 0 && (
+                  <p className="text-xs font-medium mt-3">
+                    Prix :{" "}
+                    {m.prixExponentiel
+                      ? `${formatEuros(m.prix)} / unité`
+                      : `${formatEuros(m.prix)} (forfait)`}
+                  </p>
+                )}
                 {m.caution != null && (
-                  <p className="text-xs text-muted-foreground mt-3">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Caution : {formatEuros(m.caution)}
                   </p>
                 )}
