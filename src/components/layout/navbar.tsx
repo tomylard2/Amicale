@@ -28,12 +28,6 @@ export function Navbar({
             alt="Amicale des Sapeurs-Pompiers de Châteaubourg"
             className="h-9 w-9 rounded-full"
           />
-          <span className="hidden sm:flex items-stretch text-sm font-extrabold">
-            <span className="bg-primary px-1.5 rounded-l">SAPEURS</span>
-            <span className="bg-white text-slate-900 px-1.5 rounded-r">
-              POMPIERS
-            </span>
-          </span>
         </Link>
 
         <nav className="flex-1 flex items-center gap-1 overflow-x-auto">
