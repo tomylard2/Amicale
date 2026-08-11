@@ -17,7 +17,7 @@ import {
   toDateInput,
   todayInput,
 } from "@/lib/dates";
-import { RESERVATION_STATUS, ROLES } from "@/lib/constants";
+import { RESERVATION_STATUS, ROLES, type Beneficiaire } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Modifier la réservation",
@@ -75,11 +75,28 @@ export default async function ModifierReservationPage({
     quantiteTotale: a.equipment.quantiteTotale,
     prix: a.equipment.prix,
     prixExponentiel: a.equipment.prixExponentiel,
+    options: a.equipment.options.map((o) => o.label),
+    tarifBeneficiaire: a.equipment.tarifBeneficiaire,
+    prixAmicaleChateaubourg: a.equipment.prixAmicaleChateaubourg,
+    prixAutreAmicale: a.equipment.prixAutreAmicale,
+    prixAutreAssociation: a.equipment.prixAutreAssociation,
   }));
 
   const initialQuantities: Record<string, number> = {};
+  const initialOptions: Record<string, string[]> = {};
+  const initialBeneficiaires: Record<string, Beneficiaire> = {};
   for (const it of reservation.items) {
     initialQuantities[it.equipmentId] = it.quantite;
+    if (it.optionsChoisies) {
+      try {
+        initialOptions[it.equipmentId] = JSON.parse(it.optionsChoisies);
+      } catch {
+        initialOptions[it.equipmentId] = [];
+      }
+    }
+    if (it.beneficiaire) {
+      initialBeneficiaires[it.equipmentId] = it.beneficiaire as Beneficiaire;
+    }
   }
 
   return (
@@ -109,6 +126,8 @@ export default async function ModifierReservationPage({
         action={updateReservation}
         reservationId={id}
         initialQuantities={initialQuantities}
+        initialOptions={initialOptions}
+        initialBeneficiaires={initialBeneficiaires}
         submitLabel="Enregistrer les modifications"
       />
     </div>

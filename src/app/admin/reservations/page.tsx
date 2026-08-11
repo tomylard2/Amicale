@@ -17,8 +17,21 @@ import {
   RESERVATION_STATUS,
   STATUS_LABELS,
   ACTIVE_RESERVATION_STATUSES,
+  BENEFICIAIRE_LABELS,
   type ReservationStatus,
+  type Beneficiaire,
 } from "@/lib/constants";
+
+/** Lit les options choisies (JSON) d'une ligne de réservation. */
+function parseOptionsChoisies(json: string | null): string[] {
+  if (!json) return [];
+  try {
+    const arr = JSON.parse(json);
+    return Array.isArray(arr) ? arr.map(String) : [];
+  } catch {
+    return [];
+  }
+}
 import { formatDateCourte, formatEuros, reservationTotalPrice } from "@/lib/utils";
 import { isValidDateInput, parseDateInput } from "@/lib/dates";
 import type { Prisma } from "@prisma/client";
@@ -271,11 +284,28 @@ export default async function AdminReservationsPage({
                         )}
                       </p>
                       <ul className="mt-2 text-sm text-muted-foreground">
-                        {r.items.map((it) => (
-                          <li key={it.id}>
-                            {it.quantite} × {it.equipment.nom}
-                          </li>
-                        ))}
+                        {r.items.map((it) => {
+                          const opts = parseOptionsChoisies(it.optionsChoisies);
+                          return (
+                            <li key={it.id}>
+                              {it.quantite} × {it.equipment.nom}
+                              {it.beneficiaire && (
+                                <span>
+                                  {" "}
+                                  —{" "}
+                                  {BENEFICIAIRE_LABELS[
+                                    it.beneficiaire as Beneficiaire
+                                  ] ?? it.beneficiaire}
+                                </span>
+                              )}
+                              {opts.length > 0 && (
+                                <span className="block text-xs pl-4">
+                                  Options : {opts.join(", ")}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                       {r.note && (
                         <p className="mt-1 text-sm italic text-muted-foreground">

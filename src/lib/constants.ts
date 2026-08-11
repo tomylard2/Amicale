@@ -43,3 +43,29 @@ export const STATUS_LABELS: Record<ReservationStatus, string> = {
   ANNULEE: "Annulée",
   TERMINEE: "Terminée",
 };
+
+/**
+ * Catégories de bénéficiaire pour la tarification d'un matériel à
+ * "tarif selon bénéficiaire" (ex : la structure).
+ */
+export const BENEFICIAIRES = {
+  CHATEAUBOURG: "CHATEAUBOURG",
+  AUTRE_AMICALE: "AUTRE_AMICALE",
+  AUTRE_ASSOCIATION: "AUTRE_ASSOCIATION",
+} as const;
+
+export type Beneficiaire = (typeof BENEFICIAIRES)[keyof typeof BENEFICIAIRES];
+
+/** Libellés lisibles des bénéficiaires */
+export const BENEFICIAIRE_LABELS: Record<Beneficiaire, string> = {
+  CHATEAUBOURG: "Amicale de Châteaubourg",
+  AUTRE_AMICALE: "Autre amicale",
+  AUTRE_ASSOCIATION: "Autre association",
+};
+
+/** Ordre d'affichage des bénéficiaires (du moins au plus cher, en général) */
+export const BENEFICIAIRE_ORDER: Beneficiaire[] = [
+  BENEFICIAIRES.CHATEAUBOURG,
+  BENEFICIAIRES.AUTRE_AMICALE,
+  BENEFICIAIRES.AUTRE_ASSOCIATION,
+];

@@ -3,10 +3,33 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-guards";
-import { RESERVATION_STATUS } from "@/lib/constants";
+import { RESERVATION_STATUS, BENEFICIAIRE_LABELS, type Beneficiaire } from "@/lib/constants";
 import { sendEmail, siteUrl } from "@/lib/email";
-import { formatDateLongue } from "@/lib/utils";
+import { formatDateLongue, lineItemPrice } from "@/lib/utils";
 import { generateVoucherPdf } from "@/lib/pdf/generate-voucher-pdf";
+
+/** Libellé enrichi d'une ligne (matériel + bénéficiaire + options) pour le bon. */
+function voucherItemLabel(it: {
+  equipment: { nom: string };
+  beneficiaire: string | null;
+  optionsChoisies: string | null;
+}): string {
+  let label = it.equipment.nom;
+  if (it.beneficiaire) {
+    label += ` (${BENEFICIAIRE_LABELS[it.beneficiaire as Beneficiaire] ?? it.beneficiaire})`;
+  }
+  if (it.optionsChoisies) {
+    try {
+      const opts = JSON.parse(it.optionsChoisies);
+      if (Array.isArray(opts) && opts.length > 0) {
+        label += ` — options : ${opts.join(", ")}`;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return label;
+}
 
 /** Confirme (accepte) une réservation en attente. */
 export async function confirmReservation(formData: FormData): Promise<void> {
@@ -40,11 +63,9 @@ export async function confirmReservation(formData: FormData): Promise<void> {
     memberNom: `${reservation.user.prenom} ${reservation.user.nom}`,
     memberEmail: reservation.user.email,
     items: reservation.items.map((it) => ({
-      nom: it.equipment.nom,
+      nom: voucherItemLabel(it),
       quantite: it.quantite,
-      montant: it.equipment.prixExponentiel
-        ? it.equipment.prix * it.quantite
-        : it.equipment.prix,
+      montant: lineItemPrice(it),
     })),
     caution: cautionTotale,
   });

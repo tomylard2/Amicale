@@ -17,15 +17,42 @@ export function formatEuros(montant: number): string {
   }).format(montant);
 }
 
+type PricedEquipment = {
+  prix: number;
+  prixExponentiel: boolean;
+  tarifBeneficiaire?: boolean;
+  prixAmicaleChateaubourg?: number | null;
+  prixAutreAmicale?: number | null;
+  prixAutreAssociation?: number | null;
+};
+
+/** Prix d'un matériel à tarif bénéficiaire selon la catégorie choisie. */
+export function beneficiairePrice(
+  equipment: PricedEquipment,
+  beneficiaire: string | null | undefined,
+): number {
+  const map: Record<string, number | null | undefined> = {
+    CHATEAUBOURG: equipment.prixAmicaleChateaubourg,
+    AUTRE_AMICALE: equipment.prixAutreAmicale,
+    AUTRE_ASSOCIATION: equipment.prixAutreAssociation,
+  };
+  return (beneficiaire && map[beneficiaire]) || 0;
+}
+
 /**
- * Prix d'une ligne de réservation : prix × quantité si "exponentiel"
- * (ex : 5 € le banc × 6), sinon prix fixe quelle que soit la quantité
- * (ex : 20 € le lot).
+ * Prix d'une ligne de réservation.
+ * - Matériel à "tarif bénéficiaire" : prix forfaitaire selon le bénéficiaire.
+ * - Sinon : prix × quantité si "exponentiel" (ex : 5 € le banc × 6),
+ *   ou prix fixe quelle que soit la quantité (ex : 20 € le lot).
  */
 export function lineItemPrice(item: {
   quantite: number;
-  equipment: { prix: number; prixExponentiel: boolean };
+  beneficiaire?: string | null;
+  equipment: PricedEquipment;
 }): number {
+  if (item.equipment.tarifBeneficiaire) {
+    return beneficiairePrice(item.equipment, item.beneficiaire);
+  }
   return item.equipment.prixExponentiel
     ? item.equipment.prix * item.quantite
     : item.equipment.prix;
@@ -37,7 +64,8 @@ export function lineItemPrice(item: {
 export function reservationTotalPrice(
   items: {
     quantite: number;
-    equipment: { prix: number; prixExponentiel: boolean };
+    beneficiaire?: string | null;
+    equipment: PricedEquipment;
   }[],
 ): number {
   return items.reduce((sum, it) => sum + lineItemPrice(it), 0);

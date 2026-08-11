@@ -16,6 +16,11 @@ type EquipmentInitial = {
   prix?: number;
   prixExponentiel?: boolean;
   photoUrl?: string | null;
+  options?: string[];
+  tarifBeneficiaire?: boolean;
+  prixAmicaleChateaubourg?: number | null;
+  prixAutreAmicale?: number | null;
+  prixAutreAssociation?: number | null;
 };
 
 function FieldError({ messages }: { messages?: string[] }) {
@@ -38,6 +43,10 @@ export function EquipmentForm({
   const [state, formAction, pending] = useActionState(action, {});
   const [preview, setPreview] = useState<string | null>(
     initial?.photoUrl ?? null,
+  );
+  const [options, setOptions] = useState<string[]>(initial?.options ?? []);
+  const [tarifBeneficiaire, setTarifBeneficiaire] = useState(
+    initial?.tarifBeneficiaire ?? false,
   );
 
   return (
@@ -104,6 +113,7 @@ export function EquipmentForm({
         </div>
       </div>
 
+      {/* Tarification standard */}
       <div>
         <Label htmlFor="prix">Prix de location (€)</Label>
         <Input
@@ -113,6 +123,7 @@ export function EquipmentForm({
           min={0}
           step="0.01"
           defaultValue={initial?.prix ?? 0}
+          disabled={tarifBeneficiaire}
         />
         <FieldError messages={state.fieldErrors?.prix} />
         <label className="mt-2 flex items-start gap-2 text-sm">
@@ -121,6 +132,7 @@ export function EquipmentForm({
             name="prixExponentiel"
             defaultChecked={initial?.prixExponentiel ?? true}
             className="mt-0.5"
+            disabled={tarifBeneficiaire}
           />
           <span>
             Exponentiel — le prix est multiplié par la quantité (ex : 20€ ×
@@ -128,6 +140,111 @@ export function EquipmentForm({
             quantité prise (ex : 5€ le lot, peu importe combien).
           </span>
         </label>
+      </div>
+
+      {/* Tarif selon le bénéficiaire */}
+      <div className="rounded-lg border border-border p-4 space-y-3">
+        <label className="flex items-start gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            name="tarifBeneficiaire"
+            checked={tarifBeneficiaire}
+            onChange={(e) => setTarifBeneficiaire(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            Tarif différent selon le bénéficiaire
+            <span className="block font-normal text-muted-foreground">
+              Ex : la structure. Le prix ci-dessus est ignoré ; le membre choisira
+              le bénéficiaire lors de la réservation.
+            </span>
+          </span>
+        </label>
+
+        {tarifBeneficiaire && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            <div>
+              <Label htmlFor="prixAmicaleChateaubourg">
+                Amicale de Châteaubourg (€)
+              </Label>
+              <Input
+                id="prixAmicaleChateaubourg"
+                name="prixAmicaleChateaubourg"
+                type="number"
+                min={0}
+                step="0.01"
+                defaultValue={initial?.prixAmicaleChateaubourg ?? ""}
+                placeholder="Ex : 40"
+              />
+            </div>
+            <div>
+              <Label htmlFor="prixAutreAmicale">Autre amicale (€)</Label>
+              <Input
+                id="prixAutreAmicale"
+                name="prixAutreAmicale"
+                type="number"
+                min={0}
+                step="0.01"
+                defaultValue={initial?.prixAutreAmicale ?? ""}
+                placeholder="Ex : 60"
+              />
+            </div>
+            <div>
+              <Label htmlFor="prixAutreAssociation">Autre association (€)</Label>
+              <Input
+                id="prixAutreAssociation"
+                name="prixAutreAssociation"
+                type="number"
+                min={0}
+                step="0.01"
+                defaultValue={initial?.prixAutreAssociation ?? ""}
+                placeholder="Ex : 100"
+              />
+            </div>
+            <FieldError messages={state.fieldErrors?.tarifBeneficiaire} />
+          </div>
+        )}
+      </div>
+
+      {/* Options gratuites */}
+      <div className="rounded-lg border border-border p-4 space-y-2">
+        <Label>Options gratuites (facultatif)</Label>
+        <p className="text-xs text-muted-foreground">
+          Ex : « Avec bâches latérales », « Avec micro ». Le membre pourra les
+          cocher lors de la réservation. Sans incidence sur le prix.
+        </p>
+        {options.map((opt, i) => (
+          <div key={i} className="flex gap-2">
+            <Input
+              name="options"
+              value={opt}
+              onChange={(e) =>
+                setOptions((prev) =>
+                  prev.map((o, j) => (j === i ? e.target.value : o)),
+                )
+              }
+              placeholder="Libellé de l'option"
+            />
+            <button
+              type="button"
+              onClick={() =>
+                setOptions((prev) => prev.filter((_, j) => j !== i))
+              }
+              className="shrink-0 h-10 px-3 rounded-lg border border-border text-danger hover:bg-muted"
+              aria-label="Retirer l'option"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setOptions((prev) => [...prev, ""])}
+        >
+          + Ajouter une option
+        </Button>
       </div>
 
       <div>

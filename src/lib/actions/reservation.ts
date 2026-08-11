@@ -16,17 +16,75 @@ export type ReservationState = {
   fieldErrors?: Record<string, string[]>;
 };
 
-/** Collecte les quantités demandées depuis le formulaire (champs qty_<id>). */
-function collectDesiredItems(formData: FormData) {
-  const desired: { equipmentId: string; quantite: number }[] = [];
+type DesiredItem = {
+  equipmentId: string;
+  quantite: number;
+  options: string[];
+  beneficiaire: string | null;
+};
+
+/**
+ * Collecte, depuis le formulaire, les quantités demandées (qty_<id>), les
+ * options cochées (options_<id>) et le bénéficiaire choisi (beneficiaire_<id>).
+ */
+function collectDesiredItems(formData: FormData): DesiredItem[] {
+  const desired: DesiredItem[] = [];
   for (const [key, value] of formData.entries()) {
     if (!key.startsWith("qty_")) continue;
     const quantite = Math.floor(Number(value));
-    if (Number.isFinite(quantite) && quantite > 0) {
-      desired.push({ equipmentId: key.slice(4), quantite });
-    }
+    if (!Number.isFinite(quantite) || quantite <= 0) continue;
+    const equipmentId = key.slice(4);
+    const options = formData
+      .getAll(`options_${equipmentId}`)
+      .map(String)
+      .filter((o) => o.length > 0);
+    const beneficiaire =
+      String(formData.get(`beneficiaire_${equipmentId}`) ?? "").trim() || null;
+    desired.push({ equipmentId, quantite, options, beneficiaire });
   }
   return desired;
+}
+
+/**
+ * Vérifie la disponibilité et prépare les lignes à créer (options validées,
+ * bénéficiaire obligatoire pour un matériel à tarif bénéficiaire).
+ * Lève une erreur explicite si un problème est détecté.
+ */
+function buildItemsToCreate(
+  desired: DesiredItem[],
+  availability: Awaited<ReturnType<typeof computeAvailability>>,
+) {
+  const byId = new Map(availability.map((a) => [a.equipment.id, a]));
+  return desired.map((d) => {
+    const a = byId.get(d.equipmentId);
+    if (!a) throw new Error("Un matériel sélectionné n'est plus disponible.");
+    if (d.quantite > a.available) {
+      throw new Error(
+        `« ${a.equipment.nom} » : quantité demandée (${d.quantite}) supérieure au disponible (${a.available}) sur cette période.`,
+      );
+    }
+
+    let beneficiaire: string | null = null;
+    if (a.equipment.tarifBeneficiaire) {
+      if (!d.beneficiaire) {
+        throw new Error(
+          `« ${a.equipment.nom} » : indiquez pour qui la réservation est faite.`,
+        );
+      }
+      beneficiaire = d.beneficiaire;
+    }
+
+    // On ne garde que des options réellement proposées pour ce matériel.
+    const validLabels = new Set(a.equipment.options.map((o) => o.label));
+    const chosen = d.options.filter((o) => validLabels.has(o));
+
+    return {
+      equipmentId: d.equipmentId,
+      quantite: d.quantite,
+      beneficiaire,
+      optionsChoisies: chosen.length > 0 ? JSON.stringify(chosen) : null,
+    };
+  });
 }
 
 /** Création d'une réservation (statut EN_ATTENTE) avec contrôle de stock. */
@@ -68,19 +126,7 @@ export async function createReservation(
       const availability = await computeAvailability(dateDebut, dateFin, {
         client: tx,
       });
-      const byId = new Map(availability.map((a) => [a.equipment.id, a]));
-
-      for (const d of desired) {
-        const a = byId.get(d.equipmentId);
-        if (!a) {
-          throw new Error("Un matériel sélectionné n'est plus disponible.");
-        }
-        if (d.quantite > a.available) {
-          throw new Error(
-            `« ${a.equipment.nom} » : quantité demandée (${d.quantite}) supérieure au disponible (${a.available}) sur cette période.`,
-          );
-        }
-      }
+      const itemsToCreate = buildItemsToCreate(desired, availability);
 
       await tx.reservation.create({
         data: {
@@ -89,12 +135,7 @@ export async function createReservation(
           dateFin,
           note: note || null,
           statut: RESERVATION_STATUS.EN_ATTENTE,
-          items: {
-            create: desired.map((d) => ({
-              equipmentId: d.equipmentId,
-              quantite: d.quantite,
-            })),
-          },
+          items: { create: itemsToCreate },
         },
       });
     });
@@ -184,17 +225,7 @@ export async function updateReservation(
         client: tx,
         excludeReservationId: id,
       });
-      const byId = new Map(availability.map((a) => [a.equipment.id, a]));
-
-      for (const d of desired) {
-        const a = byId.get(d.equipmentId);
-        if (!a) throw new Error("Un matériel sélectionné n'est plus disponible.");
-        if (d.quantite > a.available) {
-          throw new Error(
-            `« ${a.equipment.nom} » : quantité demandée (${d.quantite}) supérieure au disponible (${a.available}) sur cette période.`,
-          );
-        }
-      }
+      const itemsToCreate = buildItemsToCreate(desired, availability);
 
       await tx.reservationItem.deleteMany({ where: { reservationId: id } });
       await tx.reservation.update({
@@ -205,12 +236,7 @@ export async function updateReservation(
           note: note || null,
           // Une modification par un membre nécessite une nouvelle validation
           statut: isAdmin ? existing.statut : RESERVATION_STATUS.EN_ATTENTE,
-          items: {
-            create: desired.map((d) => ({
-              equipmentId: d.equipmentId,
-              quantite: d.quantite,
-            })),
-          },
+          items: { create: itemsToCreate },
         },
       });
     });

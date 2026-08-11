@@ -15,7 +15,10 @@ export default async function ModifierMaterielPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const equipment = await prisma.equipment.findUnique({ where: { id } });
+  const equipment = await prisma.equipment.findUnique({
+    where: { id },
+    include: { options: { orderBy: { ordre: "asc" } } },
+  });
   if (!equipment) notFound();
 
   return (
@@ -41,6 +44,11 @@ export default async function ModifierMaterielPage({
           prix: equipment.prix,
           prixExponentiel: equipment.prixExponentiel,
           photoUrl: equipment.photoUrl,
+          options: equipment.options.map((o) => o.label),
+          tarifBeneficiaire: equipment.tarifBeneficiaire,
+          prixAmicaleChateaubourg: equipment.prixAmicaleChateaubourg,
+          prixAutreAmicale: equipment.prixAutreAmicale,
+          prixAutreAssociation: equipment.prixAutreAssociation,
         }}
       />
     </div>

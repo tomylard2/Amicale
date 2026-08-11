@@ -7,7 +7,13 @@ import {
   createReservation,
   type ReservationState,
 } from "@/lib/actions/reservation";
-import { formatEuros } from "@/lib/utils";
+import { formatEuros, beneficiairePrice } from "@/lib/utils";
+import {
+  BENEFICIAIRES,
+  BENEFICIAIRE_ORDER,
+  BENEFICIAIRE_LABELS,
+  type Beneficiaire,
+} from "@/lib/constants";
 
 export type BuilderItem = {
   id: string;
@@ -19,12 +25,31 @@ export type BuilderItem = {
   quantiteTotale: number;
   prix: number;
   prixExponentiel: boolean;
+  options: string[];
+  tarifBeneficiaire: boolean;
+  prixAmicaleChateaubourg: number | null;
+  prixAutreAmicale: number | null;
+  prixAutreAssociation: number | null;
 };
 
 type BuilderAction = (
   state: ReservationState,
   formData: FormData,
 ) => Promise<ReservationState>;
+
+/** Catégories de bénéficiaire réellement proposées (prix renseigné) pour un item. */
+function beneficiaireChoices(item: BuilderItem) {
+  const prices: Record<Beneficiaire, number | null> = {
+    CHATEAUBOURG: item.prixAmicaleChateaubourg,
+    AUTRE_AMICALE: item.prixAutreAmicale,
+    AUTRE_ASSOCIATION: item.prixAutreAssociation,
+  };
+  return BENEFICIAIRE_ORDER.filter((b) => prices[b] != null).map((b) => ({
+    value: b,
+    label: BENEFICIAIRE_LABELS[b],
+    prix: prices[b] as number,
+  }));
+}
 
 export function ReservationBuilder({
   dateDebut,
@@ -33,6 +58,8 @@ export function ReservationBuilder({
   action = createReservation,
   reservationId,
   initialQuantities,
+  initialOptions,
+  initialBeneficiaires,
   submitLabel = "Valider ma réservation",
 }: {
   dateDebut: string;
@@ -41,12 +68,20 @@ export function ReservationBuilder({
   action?: BuilderAction;
   reservationId?: string;
   initialQuantities?: Record<string, number>;
+  initialOptions?: Record<string, string[]>;
+  initialBeneficiaires?: Record<string, Beneficiaire>;
   submitLabel?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [quantities, setQuantities] = useState<Record<string, number>>(
     initialQuantities ?? {},
   );
+  const [selectedOptions, setSelectedOptions] = useState<
+    Record<string, string[]>
+  >(initialOptions ?? {});
+  const [beneficiaires, setBeneficiaires] = useState<
+    Record<string, Beneficiaire>
+  >(initialBeneficiaires ?? {});
 
   const disponibles = items.filter((i) => i.available > 0);
   const indisponibles = items.filter((i) => i.available === 0);
@@ -56,16 +91,36 @@ export function ReservationBuilder({
     setQuantities((q) => ({ ...q, [id]: v }));
   };
 
+  const toggleOption = (id: string, label: string, checked: boolean) => {
+    setSelectedOptions((prev) => {
+      const cur = prev[id] ?? [];
+      return {
+        ...prev,
+        [id]: checked ? [...cur, label] : cur.filter((l) => l !== label),
+      };
+    });
+  };
+
+  const beneficiaireOf = (item: BuilderItem): Beneficiaire => {
+    const choices = beneficiaireChoices(item);
+    return beneficiaires[item.id] ?? choices[0]?.value ?? BENEFICIAIRES.CHATEAUBOURG;
+  };
+
+  const lineTotal = (item: BuilderItem): number => {
+    const q = quantities[item.id] ?? 0;
+    if (q === 0) return 0;
+    if (item.tarifBeneficiaire) {
+      return beneficiairePrice(item, beneficiaireOf(item));
+    }
+    return item.prixExponentiel ? item.prix * q : item.prix;
+  };
+
   const totalItems = Object.values(quantities).reduce((a, b) => a + b, 0);
   const totalCaution = items.reduce((sum, i) => {
     const q = quantities[i.id] ?? 0;
     return sum + q * (i.caution ?? 0);
   }, 0);
-  const totalPrix = items.reduce((sum, i) => {
-    const q = quantities[i.id] ?? 0;
-    if (q === 0) return sum;
-    return sum + (i.prixExponentiel ? i.prix * q : i.prix);
-  }, 0);
+  const totalPrix = items.reduce((sum, i) => sum + lineTotal(i), 0);
 
   return (
     <form action={formAction} className="space-y-6">
@@ -89,6 +144,8 @@ export function ReservationBuilder({
         <div className="space-y-3">
           {disponibles.map((item) => {
             const qty = quantities[item.id] ?? 0;
+            const choices = beneficiaireChoices(item);
+            const chosenBenef = beneficiaireOf(item);
             return (
               <Card key={item.id} className="p-4">
                 <div className="flex items-center gap-4">
@@ -110,13 +167,19 @@ export function ReservationBuilder({
                     <p className="text-sm text-success">
                       {item.available} disponible{item.available > 1 ? "s" : ""}
                     </p>
-                    {item.prix > 0 && (
+                    {item.tarifBeneficiaire ? (
                       <p className="text-xs font-medium">
-                        Prix :{" "}
-                        {item.prixExponentiel
-                          ? `${formatEuros(item.prix)} / unité`
-                          : `${formatEuros(item.prix)} (forfait, quelle que soit la quantité)`}
+                        Tarif selon le bénéficiaire (à choisir ci-dessous)
                       </p>
+                    ) : (
+                      item.prix > 0 && (
+                        <p className="text-xs font-medium">
+                          Prix :{" "}
+                          {item.prixExponentiel
+                            ? `${formatEuros(item.prix)} / unité`
+                            : `${formatEuros(item.prix)} (forfait, quelle que soit la quantité)`}
+                        </p>
+                      )
                     )}
                     {item.caution != null && (
                       <p className="text-xs text-muted-foreground">
@@ -157,6 +220,69 @@ export function ReservationBuilder({
                     </button>
                   </div>
                 </div>
+
+                {/* Bénéficiaire (matériel à tarif bénéficiaire, si sélectionné) */}
+                {qty > 0 && item.tarifBeneficiaire && choices.length > 0 && (
+                  <div className="mt-3 border-t border-border pt-3">
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      htmlFor={`benef-${item.id}`}
+                    >
+                      Pour qui ? *
+                    </label>
+                    <select
+                      id={`benef-${item.id}`}
+                      name={`beneficiaire_${item.id}`}
+                      value={chosenBenef}
+                      onChange={(e) =>
+                        setBeneficiaires((prev) => ({
+                          ...prev,
+                          [item.id]: e.target.value as Beneficiaire,
+                        }))
+                      }
+                      className="h-10 w-full sm:w-96 rounded-lg border border-input bg-card px-3 text-sm"
+                    >
+                      {choices.map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.label} — {formatEuros(c.prix)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Options gratuites (si sélectionné) */}
+                {qty > 0 && item.options.length > 0 && (
+                  <div className="mt-3 border-t border-border pt-3">
+                    <p className="text-sm font-medium mb-1">
+                      Options (gratuites)
+                    </p>
+                    <div className="flex flex-col gap-1">
+                      {item.options.map((opt) => {
+                        const checked = (selectedOptions[item.id] ?? []).includes(
+                          opt,
+                        );
+                        return (
+                          <label
+                            key={opt}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              name={`options_${item.id}`}
+                              value={opt}
+                              checked={checked}
+                              onChange={(e) =>
+                                toggleOption(item.id, opt, e.target.checked)
+                              }
+                            />
+                            {opt}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </Card>
             );
           })}

@@ -23,6 +23,39 @@ function parseFields(formData: FormData) {
   });
 }
 
+/** Convertit une valeur de formulaire en nombre, ou null si vide/invalide. */
+function numOrNull(value: FormDataEntryValue | null): number | null {
+  const s = String(value ?? "").trim();
+  if (s === "") return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Extrait les options gratuites (libellés non vides) du formulaire. */
+function parseOptions(formData: FormData): string[] {
+  return formData
+    .getAll("options")
+    .map((v) => String(v).trim())
+    .filter((v) => v.length > 0);
+}
+
+/** Extrait les champs "tarif selon bénéficiaire". */
+function parseBeneficiaire(formData: FormData) {
+  const tarifBeneficiaire = formData.get("tarifBeneficiaire") === "on";
+  return {
+    tarifBeneficiaire,
+    prixAmicaleChateaubourg: tarifBeneficiaire
+      ? numOrNull(formData.get("prixAmicaleChateaubourg"))
+      : null,
+    prixAutreAmicale: tarifBeneficiaire
+      ? numOrNull(formData.get("prixAutreAmicale"))
+      : null,
+    prixAutreAssociation: tarifBeneficiaire
+      ? numOrNull(formData.get("prixAutreAssociation"))
+      : null,
+  };
+}
+
 /** Création d'un matériel */
 export async function createEquipment(
   _prevState: EquipmentFormState,
@@ -36,6 +69,18 @@ export async function createEquipment(
   }
   const { nom, description, quantiteTotale, caution, prix } = parsed.data;
   const prixExponentiel = formData.get("prixExponentiel") === "on";
+  const beneficiaire = parseBeneficiaire(formData);
+  const options = parseOptions(formData);
+
+  if (beneficiaire.tarifBeneficiaire && beneficiaire.prixAmicaleChateaubourg == null) {
+    return {
+      fieldErrors: {
+        tarifBeneficiaire: [
+          "Renseignez au moins le tarif « Amicale de Châteaubourg ».",
+        ],
+      },
+    };
+  }
 
   // Photo (facultative)
   let photoUrl: string | null = null;
@@ -54,7 +99,11 @@ export async function createEquipment(
       caution: caution ?? null,
       prix,
       prixExponentiel,
+      ...beneficiaire,
       photoUrl,
+      options: {
+        create: options.map((label, i) => ({ label, ordre: i })),
+      },
     },
   });
 
@@ -81,6 +130,18 @@ export async function updateEquipment(
   }
   const { nom, description, quantiteTotale, caution, prix } = parsed.data;
   const prixExponentiel = formData.get("prixExponentiel") === "on";
+  const beneficiaire = parseBeneficiaire(formData);
+  const options = parseOptions(formData);
+
+  if (beneficiaire.tarifBeneficiaire && beneficiaire.prixAmicaleChateaubourg == null) {
+    return {
+      fieldErrors: {
+        tarifBeneficiaire: [
+          "Renseignez au moins le tarif « Amicale de Châteaubourg ».",
+        ],
+      },
+    };
+  }
 
   let photoUrl = existing.photoUrl;
   const photo = formData.get("photo");
@@ -101,7 +162,13 @@ export async function updateEquipment(
       caution: caution ?? null,
       prix,
       prixExponentiel,
+      ...beneficiaire,
       photoUrl,
+      // On remplace la liste d'options par la nouvelle.
+      options: {
+        deleteMany: {},
+        create: options.map((label, i) => ({ label, ordre: i })),
+      },
     },
   });
 

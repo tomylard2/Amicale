@@ -47,12 +47,33 @@ model Equipment {
   // true : le prix est multiplié par la quantité (ex : 20€ x nb de barnums)
   // false : prix fixe quelle que soit la quantité (ex : 5€ le lot, peu importe combien)
   prixExponentiel Boolean @default(true)
+  // Tarif selon le bénéficiaire : si activé, les 3 prix ci-dessous remplacent
+  // "prix" pour ce matériel (ex : la structure — Châteaubourg / autre amicale
+  // / autre association). Le bénéficiaire est choisi lors de la réservation.
+  tarifBeneficiaire       Boolean @default(false)
+  prixAmicaleChateaubourg Float?
+  prixAutreAmicale        Float?
+  prixAutreAssociation    Float?
   isActive       Boolean  @default(true) // false = retiré du catalogue
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   reservationItems ReservationItem[]
   blockedPeriods   BlockedPeriod[]
+  options          EquipmentOption[]
+}
+
+/// Option gratuite proposée pour un matériel (ex : « avec bâches », « avec
+/// micro »). Cochable par le membre lors de la réservation. Sans incidence
+/// sur le prix ni le stock.
+model EquipmentOption {
+  id          String    @id @default(cuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  label       String
+  ordre       Int       @default(0)
+
+  @@index([equipmentId])
 }
 
 /// Une réservation regroupe plusieurs matériels sur une même période
@@ -83,6 +104,12 @@ model ReservationItem {
   equipmentId   String
   equipment     Equipment   @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
   quantite      Int
+  // Options gratuites choisies (JSON : tableau de libellés), figées au moment
+  // de la réservation.
+  optionsChoisies String?
+  // Bénéficiaire pour la tarification si le matériel a tarifBeneficiaire :
+  // CHATEAUBOURG | AUTRE_AMICALE | AUTRE_ASSOCIATION
+  beneficiaire    String?
 
   @@index([reservationId])
   @@index([equipmentId])

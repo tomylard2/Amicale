@@ -40,6 +40,11 @@ export default async function ReserverPage({
       quantiteTotale: a.equipment.quantiteTotale,
       prix: a.equipment.prix,
       prixExponentiel: a.equipment.prixExponentiel,
+      options: a.equipment.options.map((o) => o.label),
+      tarifBeneficiaire: a.equipment.tarifBeneficiaire,
+      prixAmicaleChateaubourg: a.equipment.prixAmicaleChateaubourg,
+      prixAutreAmicale: a.equipment.prixAutreAmicale,
+      prixAutreAssociation: a.equipment.prixAutreAssociation,
     }));
   }
 

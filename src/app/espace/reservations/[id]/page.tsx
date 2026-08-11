@@ -11,8 +11,21 @@ import {
   STATUS_LABELS,
   RESERVATION_STATUS,
   ROLES,
+  BENEFICIAIRE_LABELS,
   type ReservationStatus,
+  type Beneficiaire,
 } from "@/lib/constants";
+
+/** Lit les options choisies (JSON) d'une ligne de réservation. */
+function parseOptionsChoisies(json: string | null): string[] {
+  if (!json) return [];
+  try {
+    const arr = JSON.parse(json);
+    return Array.isArray(arr) ? arr.map(String) : [];
+  } catch {
+    return [];
+  }
+}
 import {
   formatDateLongue,
   formatEuros,
@@ -92,30 +105,49 @@ export default async function ReservationDetailPage({
 
           <div className="border-t border-border pt-4">
             <h2 className="text-sm font-medium mb-2">Matériel réservé</h2>
-            <ul className="space-y-2">
-              {reservation.items.map((it) => (
-                <li key={it.id} className="flex items-center gap-3">
-                  {it.equipment.photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={it.equipment.photoUrl}
-                      alt={it.equipment.nom}
-                      className="h-10 w-10 rounded object-cover border border-border"
-                    />
-                  ) : (
-                    <div className="h-10 w-10 rounded bg-muted grid place-items-center">
-                      📦
+            <ul className="space-y-3">
+              {reservation.items.map((it) => {
+                const options = parseOptionsChoisies(it.optionsChoisies);
+                return (
+                  <li key={it.id} className="flex items-start gap-3">
+                    {it.equipment.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={it.equipment.photoUrl}
+                        alt={it.equipment.nom}
+                        className="h-10 w-10 rounded object-cover border border-border shrink-0"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded bg-muted grid place-items-center shrink-0">
+                        📦
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2">
+                        <span className="flex-1 text-sm">{it.equipment.nom}</span>
+                        <span className="text-sm text-muted-foreground">
+                          × {it.quantite}
+                        </span>
+                        <span className="text-sm font-medium w-24 text-right">
+                          {formatEuros(lineItemPrice(it))}
+                        </span>
+                      </div>
+                      {it.beneficiaire && (
+                        <p className="text-xs text-muted-foreground">
+                          Pour :{" "}
+                          {BENEFICIAIRE_LABELS[it.beneficiaire as Beneficiaire] ??
+                            it.beneficiaire}
+                        </p>
+                      )}
+                      {options.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Options : {options.join(", ")}
+                        </p>
+                      )}
                     </div>
-                  )}
-                  <span className="flex-1 text-sm">{it.equipment.nom}</span>
-                  <span className="text-sm text-muted-foreground w-10 text-right">
-                    × {it.quantite}
-                  </span>
-                  <span className="text-sm font-medium w-24 text-right">
-                    {formatEuros(lineItemPrice(it))}
-                  </span>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           </div>
 

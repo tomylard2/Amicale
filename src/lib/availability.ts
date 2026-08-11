@@ -1,12 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { ACTIVE_RESERVATION_STATUSES } from "@/lib/constants";
-import type { Prisma, PrismaClient, Equipment } from "@prisma/client";
+import type { Prisma, PrismaClient, Equipment, EquipmentOption } from "@prisma/client";
 
 // Accepte le client Prisma normal OU un client de transaction.
 type Client = PrismaClient | Prisma.TransactionClient;
 
+// Matériel avec sa liste d'options gratuites.
+export type EquipmentWithOptions = Equipment & { options: EquipmentOption[] };
+
 export type EquipmentAvailability = {
-  equipment: Equipment;
+  equipment: EquipmentWithOptions;
   reserved: number; // quantité déjà réservée sur la période
   available: number; // quantité encore disponible
   blocked: boolean; // indisponible car période bloquée
@@ -34,6 +37,7 @@ export async function computeAvailability(
   const equipments = await client.equipment.findMany({
     where: { isActive: true },
     orderBy: { nom: "asc" },
+    include: { options: { orderBy: { ordre: "asc" } } },
   });
 
   // Lignes de réservation qui chevauchent la période (statuts actifs)
