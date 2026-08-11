@@ -19,7 +19,7 @@ import {
   ACTIVE_RESERVATION_STATUSES,
   type ReservationStatus,
 } from "@/lib/constants";
-import { formatDateCourte, formatEuros } from "@/lib/utils";
+import { formatDateCourte, formatEuros, reservationTotalPrice } from "@/lib/utils";
 import { isValidDateInput, parseDateInput } from "@/lib/dates";
 import type { Prisma } from "@prisma/client";
 
@@ -243,6 +243,7 @@ export default async function AdminReservationsPage({
               (sum, it) => sum + it.quantite * (it.equipment.caution ?? 0),
               0,
             );
+            const prixTotal = reservationTotalPrice(r.items);
             const modifiable =
               r.statut !== RESERVATION_STATUS.ANNULEE &&
               r.statut !== RESERVATION_STATUS.TERMINEE;
@@ -257,8 +258,17 @@ export default async function AdminReservationsPage({
                       <p className="text-sm text-muted-foreground">
                         Du {formatDateCourte(r.dateDebut)} au{" "}
                         {formatDateCourte(r.dateFin)}
-                        {cautionTotale > 0 &&
-                          ` · caution ${formatEuros(cautionTotale)}`}
+                      </p>
+                      <p className="text-sm mt-0.5">
+                        <span className="font-semibold text-foreground">
+                          Prix : {formatEuros(prixTotal)}
+                        </span>
+                        {cautionTotale > 0 && (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            · caution {formatEuros(cautionTotale)}
+                          </span>
+                        )}
                       </p>
                       <ul className="mt-2 text-sm text-muted-foreground">
                         {r.items.map((it) => (

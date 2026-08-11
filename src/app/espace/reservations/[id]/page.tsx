@@ -13,7 +13,12 @@ import {
   ROLES,
   type ReservationStatus,
 } from "@/lib/constants";
-import { formatDateLongue, formatEuros } from "@/lib/utils";
+import {
+  formatDateLongue,
+  formatEuros,
+  reservationTotalPrice,
+  lineItemPrice,
+} from "@/lib/utils";
 import { parseDateInput, todayInput } from "@/lib/dates";
 
 export const metadata: Metadata = {
@@ -50,6 +55,7 @@ export default async function ReservationDetailPage({
     (sum, it) => sum + it.quantite * (it.equipment.caution ?? 0),
     0,
   );
+  const prixTotal = reservationTotalPrice(reservation.items);
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -102,17 +108,28 @@ export default async function ReservationDetailPage({
                     </div>
                   )}
                   <span className="flex-1 text-sm">{it.equipment.nom}</span>
-                  <span className="text-sm font-medium">× {it.quantite}</span>
+                  <span className="text-sm text-muted-foreground w-10 text-right">
+                    × {it.quantite}
+                  </span>
+                  <span className="text-sm font-medium w-24 text-right">
+                    {formatEuros(lineItemPrice(it))}
+                  </span>
                 </li>
               ))}
             </ul>
           </div>
 
-          {cautionTotale > 0 && (
-            <p className="text-sm text-muted-foreground">
-              Caution totale : {formatEuros(cautionTotale)}
+          <div className="border-t border-border pt-4 space-y-1">
+            <p className="text-sm">
+              <span className="text-muted-foreground">Prix total : </span>
+              <span className="font-semibold">{formatEuros(prixTotal)}</span>
             </p>
-          )}
+            {cautionTotale > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Caution totale : {formatEuros(cautionTotale)}
+              </p>
+            )}
+          </div>
           {reservation.note && (
             <p className="text-sm text-muted-foreground italic border-t border-border pt-4">
               « {reservation.note} »

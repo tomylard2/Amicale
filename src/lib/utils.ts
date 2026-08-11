@@ -17,6 +17,32 @@ export function formatEuros(montant: number): string {
   }).format(montant);
 }
 
+/**
+ * Prix d'une ligne de réservation : prix × quantité si "exponentiel"
+ * (ex : 5 € le banc × 6), sinon prix fixe quelle que soit la quantité
+ * (ex : 20 € le lot).
+ */
+export function lineItemPrice(item: {
+  quantite: number;
+  equipment: { prix: number; prixExponentiel: boolean };
+}): number {
+  return item.equipment.prixExponentiel
+    ? item.equipment.prix * item.quantite
+    : item.equipment.prix;
+}
+
+/**
+ * Calcule le prix total de location d'une réservation à partir de ses lignes.
+ */
+export function reservationTotalPrice(
+  items: {
+    quantite: number;
+    equipment: { prix: number; prixExponentiel: boolean };
+  }[],
+): number {
+  return items.reduce((sum, it) => sum + lineItemPrice(it), 0);
+}
+
 /** Formate une date en français (ex: "samedi 19 juillet 2026") */
 export function formatDateLongue(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;

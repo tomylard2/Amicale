@@ -10,7 +10,7 @@ import {
   type ReservationStatus,
 } from "@/lib/constants";
 import { getUpcomingWeekend } from "@/lib/dates";
-import { formatDateCourte } from "@/lib/utils";
+import { formatDateCourte, formatEuros, reservationTotalPrice } from "@/lib/utils";
 
 export default async function AdminDashboardPage() {
   const { samedi, dimanche } = getUpcomingWeekend();
@@ -108,6 +108,9 @@ export default async function AdminDashboardPage() {
                       {r.items
                         .map((it) => `${it.quantite} × ${it.equipment.nom}`)
                         .join(", ")}
+                    </p>
+                    <p className="text-xs font-semibold mt-0.5">
+                      Prix : {formatEuros(reservationTotalPrice(r.items))}
                     </p>
                   </div>
                   <StatusBadge
