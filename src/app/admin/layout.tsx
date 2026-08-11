@@ -4,6 +4,10 @@ import { Navbar, type NavLink } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ROLES } from "@/lib/constants";
 
+// Pages admin protégées par connexion et affichant des données en direct :
+// rendu à chaque requête (pas de pré-génération au build).
+export const dynamic = "force-dynamic";
+
 const adminLinks: NavLink[] = [
   { href: "/admin", label: "Tableau de bord" },
   { href: "/admin/materiel", label: "Matériel" },

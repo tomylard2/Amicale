@@ -3,6 +3,10 @@ import { auth } from "@/auth";
 import { Navbar, type NavLink } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 
+// Pages membre protégées par connexion et affichant des données en direct :
+// rendu à chaque requête (pas de pré-génération au build).
+export const dynamic = "force-dynamic";
+
 const memberLinks: NavLink[] = [
   { href: "/espace", label: "Tableau de bord" },
   { href: "/espace/catalogue", label: "Catalogue" },
