@@ -45,14 +45,19 @@ function pad(n: number) {
 }
 
 function buildViewHref(
-  filters: { statut?: string; userId?: string; date?: string },
+  filters: { statut?: string; userId?: string; date?: string; periode?: string },
   vue: "liste" | "calendrier",
   mois?: string,
 ) {
   const params = new URLSearchParams();
   if (filters.statut) params.set("statut", filters.statut);
   if (filters.userId) params.set("userId", filters.userId);
-  if (vue === "liste" && filters.date) params.set("date", filters.date);
+  if (vue === "liste") {
+    if (filters.date) params.set("date", filters.date);
+    if (filters.periode && filters.periode !== "a_venir") {
+      params.set("periode", filters.periode);
+    }
+  }
   if (vue === "calendrier") {
     params.set("vue", "calendrier");
     if (mois) params.set("mois", mois);
@@ -68,17 +73,26 @@ export default async function AdminReservationsPage({
     statut?: string;
     userId?: string;
     date?: string;
+    periode?: string;
     vue?: string;
     mois?: string;
   }>;
 }) {
-  const { statut, userId, date, vue, mois } = await searchParams;
+  const { statut, userId, date, periode: periodeParam, vue, mois } =
+    await searchParams;
   const vueCalendrier = vue === "calendrier";
 
   const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const moisValide = mois && /^\d{4}-\d{2}$/.test(mois);
   const year = moisValide ? Number(mois!.slice(0, 4)) : now.getFullYear();
   const monthIndex = moisValide ? Number(mois!.slice(5, 7)) - 1 : now.getMonth();
+
+  // Période affichée : par défaut "à venir & en cours" pour ne pas surcharger.
+  const periode =
+    periodeParam === "passees" || periodeParam === "toutes"
+      ? periodeParam
+      : "a_venir";
 
   const where: Prisma.ReservationWhereInput = {};
   if (statut && statut in STATUS_LABELS) {
@@ -86,10 +100,16 @@ export default async function AdminReservationsPage({
   }
   if (userId) where.userId = userId;
   if (isValidDateInput(date)) {
+    // Un jour précis a été demandé : il prime sur la période générale.
     const d = parseDateInput(date);
     where.dateDebut = { lte: d };
     where.dateFin = { gte: d };
+  } else if (periode === "a_venir") {
+    where.dateFin = { gte: today }; // en cours ou à venir
+  } else if (periode === "passees") {
+    where.dateFin = { lt: today }; // terminées
   }
+  // periode === "toutes" : aucune contrainte de date
 
   const [reservations, users] = await Promise.all([
     prisma.reservation.findMany({
@@ -159,13 +179,13 @@ export default async function AdminReservationsPage({
         </div>
         <div className="inline-flex rounded-lg border border-border overflow-hidden text-sm">
           <Link
-            href={buildViewHref({ statut, userId, date }, "liste")}
+            href={buildViewHref({ statut, userId, date, periode }, "liste")}
             className={`px-3 py-1.5 ${!vueCalendrier ? "bg-primary text-white" : "hover:bg-muted"}`}
           >
             Vue liste
           </Link>
           <Link
-            href={buildViewHref({ statut, userId, date }, "calendrier", mois)}
+            href={buildViewHref({ statut, userId, date, periode }, "calendrier", mois)}
             className={`px-3 py-1.5 ${vueCalendrier ? "bg-primary text-white" : "hover:bg-muted"}`}
           >
             Vue calendrier
@@ -180,6 +200,21 @@ export default async function AdminReservationsPage({
             method="get"
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end"
           >
+            <div>
+              <label className="block text-sm font-medium mb-1" htmlFor="periode">
+                Période
+              </label>
+              <select
+                id="periode"
+                name="periode"
+                defaultValue={periode}
+                className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm"
+              >
+                <option value="a_venir">À venir &amp; en cours</option>
+                <option value="passees">Passées</option>
+                <option value="toutes">Toutes</option>
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="statut">
                 Statut
