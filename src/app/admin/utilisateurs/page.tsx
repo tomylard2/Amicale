@@ -11,6 +11,7 @@ import {
   ToggleUserActiveButton,
   DeleteUserButton,
   ChangeRoleButton,
+  CategorySelect,
 } from "@/components/admin/user-actions";
 
 export const metadata: Metadata = {
@@ -69,6 +70,7 @@ export default async function UtilisateursPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
+                    <CategorySelect id={u.id} categorie={u.categorie} />
                     <ApproveUserButton id={u.id} />
                     <DeleteUserButton id={u.id} nom={`${u.prenom} ${u.nom}`} />
                   </div>
@@ -92,6 +94,7 @@ export default async function UtilisateursPage() {
                   <th className="p-3 font-medium">Nom</th>
                   <th className="p-3 font-medium">Contact</th>
                   <th className="p-3 font-medium">Rôle</th>
+                  <th className="p-3 font-medium">Catégorie</th>
                   <th className="p-3 font-medium">Réservations</th>
                   <th className="p-3 font-medium">Statut</th>
                   <th className="p-3 font-medium text-right">Actions</th>
@@ -120,6 +123,9 @@ export default async function UtilisateursPage() {
                       ) : (
                         <span className="text-muted-foreground">Membre</span>
                       )}
+                    </td>
+                    <td className="p-3">
+                      <CategorySelect id={u.id} categorie={u.categorie} />
                     </td>
                     <td className="p-3">{u._count.reservations}</td>
                     <td className="p-3">

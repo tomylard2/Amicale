@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-guards";
-import { ROLES } from "@/lib/constants";
+import { ROLES, MEMBER_CATEGORIES, type MemberCategory } from "@/lib/constants";
 import { adminCreateUserSchema, fieldErrorsFrom } from "@/lib/validations";
 import { sendEmail } from "@/lib/email";
 
@@ -28,11 +28,12 @@ export async function createUserByAdmin(
     telephone: formData.get("telephone"),
     password: formData.get("password"),
     role: formData.get("role"),
+    categorie: formData.get("categorie"),
   });
   if (!parsed.success) {
     return { fieldErrors: fieldErrorsFrom(parsed.error) };
   }
-  const { prenom, nom, email, telephone, password, role } = parsed.data;
+  const { prenom, nom, email, telephone, password, role, categorie } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -48,6 +49,7 @@ export async function createUserByAdmin(
       telephone: telephone ? telephone : null,
       passwordHash,
       role,
+      categorie,
       // Compte créé par un admin : directement approuvé et actif
       isApproved: true,
       isActive: true,
@@ -87,6 +89,24 @@ export async function setUserRole(formData: FormData): Promise<void> {
   });
   revalidatePath("/admin/utilisateurs");
   revalidatePath("/admin");
+}
+
+/**
+ * Change la catégorie d'un membre (Châteaubourg, retraité, Domagné,
+ * Servon, Autre). Détermine les tarifs bénéficiaire qu'il pourra choisir
+ * lors d'une réservation.
+ */
+export async function setUserCategory(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const categorie = String(formData.get("categorie") ?? "");
+
+  if (!id || !Object.values(MEMBER_CATEGORIES).includes(categorie as MemberCategory)) {
+    return;
+  }
+
+  await prisma.user.update({ where: { id }, data: { categorie } });
+  revalidatePath("/admin/utilisateurs");
 }
 
 /** Approuve un compte membre en attente. */

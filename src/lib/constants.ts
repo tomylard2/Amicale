@@ -69,3 +69,52 @@ export const BENEFICIAIRE_ORDER: Beneficiaire[] = [
   BENEFICIAIRES.AUTRE_AMICALE,
   BENEFICIAIRES.AUTRE_ASSOCIATION,
 ];
+
+/** Catégorie d'un membre, attribuée par l'admin lors de l'approbation. */
+export const MEMBER_CATEGORIES = {
+  CHATEAUBOURG: "CHATEAUBOURG",
+  RETRAITE_CHATEAUBOURG: "RETRAITE_CHATEAUBOURG",
+  DOMAGNE: "DOMAGNE",
+  SERVON: "SERVON",
+  AUTRE: "AUTRE",
+} as const;
+
+export type MemberCategory =
+  (typeof MEMBER_CATEGORIES)[keyof typeof MEMBER_CATEGORIES];
+
+export const MEMBER_CATEGORY_LABELS: Record<MemberCategory, string> = {
+  CHATEAUBOURG: "Amicaliste Châteaubourg",
+  RETRAITE_CHATEAUBOURG: "Amicaliste retraité Châteaubourg",
+  DOMAGNE: "Amicaliste Domagné",
+  SERVON: "Amicaliste Servon",
+  AUTRE: "Autre",
+};
+
+export const MEMBER_CATEGORY_ORDER: MemberCategory[] = [
+  MEMBER_CATEGORIES.CHATEAUBOURG,
+  MEMBER_CATEGORIES.RETRAITE_CHATEAUBOURG,
+  MEMBER_CATEGORIES.DOMAGNE,
+  MEMBER_CATEGORIES.SERVON,
+  MEMBER_CATEGORIES.AUTRE,
+];
+
+/**
+ * Tarifs bénéficiaire qu'un membre peut choisir lors d'une réservation,
+ * selon sa catégorie. Validé aussi côté serveur (pas seulement dans le
+ * formulaire) dans src/lib/actions/reservation.ts.
+ */
+export const ALLOWED_BENEFICIAIRES: Record<MemberCategory, Beneficiaire[]> = {
+  CHATEAUBOURG: [
+    BENEFICIAIRES.CHATEAUBOURG,
+    BENEFICIAIRES.AUTRE_AMICALE,
+    BENEFICIAIRES.AUTRE_ASSOCIATION,
+  ],
+  RETRAITE_CHATEAUBOURG: [
+    BENEFICIAIRES.CHATEAUBOURG,
+    BENEFICIAIRES.AUTRE_AMICALE,
+    BENEFICIAIRES.AUTRE_ASSOCIATION,
+  ],
+  DOMAGNE: [BENEFICIAIRES.AUTRE_AMICALE, BENEFICIAIRES.AUTRE_ASSOCIATION],
+  SERVON: [BENEFICIAIRES.AUTRE_AMICALE, BENEFICIAIRES.AUTRE_ASSOCIATION],
+  AUTRE: [BENEFICIAIRES.AUTRE_ASSOCIATION],
+};

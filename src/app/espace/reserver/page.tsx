@@ -5,8 +5,11 @@ import {
   ReservationBuilder,
   type BuilderItem,
 } from "@/components/reservation/reservation-builder";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { computeAvailability } from "@/lib/availability";
 import { isValidDateInput, parseDateInput } from "@/lib/dates";
+import { ALLOWED_BENEFICIAIRES, type MemberCategory } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Réserver du matériel",
@@ -18,6 +21,14 @@ export default async function ReserverPage({
   searchParams: Promise<{ debut?: string; fin?: string }>;
 }) {
   const { debut, fin } = await searchParams;
+
+  const session = await auth();
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session!.user.id },
+    select: { categorie: true },
+  });
+  const allowedBeneficiaires =
+    ALLOWED_BENEFICIAIRES[(currentUser?.categorie as MemberCategory) ?? "CHATEAUBOURG"];
 
   const datesValides =
     isValidDateInput(debut) &&
@@ -83,6 +94,7 @@ export default async function ReserverPage({
             dateDebut={debut as string}
             dateFin={fin as string}
             items={items}
+            allowedBeneficiaires={allowedBeneficiaires}
           />
         </div>
       )}

@@ -37,14 +37,20 @@ type BuilderAction = (
   formData: FormData,
 ) => Promise<ReservationState>;
 
-/** Catégories de bénéficiaire réellement proposées (prix renseigné) pour un item. */
-function beneficiaireChoices(item: BuilderItem) {
+/**
+ * Catégories de bénéficiaire réellement proposées pour un item : celles
+ * dont le prix est renseigné sur le matériel, ET autorisées pour la
+ * catégorie du membre connecté.
+ */
+function beneficiaireChoices(item: BuilderItem, allowedBeneficiaires: Beneficiaire[]) {
   const prices: Record<Beneficiaire, number | null> = {
     CHATEAUBOURG: item.prixAmicaleChateaubourg,
     AUTRE_AMICALE: item.prixAutreAmicale,
     AUTRE_ASSOCIATION: item.prixAutreAssociation,
   };
-  return BENEFICIAIRE_ORDER.filter((b) => prices[b] != null).map((b) => ({
+  return BENEFICIAIRE_ORDER.filter(
+    (b) => prices[b] != null && allowedBeneficiaires.includes(b),
+  ).map((b) => ({
     value: b,
     label: BENEFICIAIRE_LABELS[b],
     prix: prices[b] as number,
@@ -60,6 +66,7 @@ export function ReservationBuilder({
   initialQuantities,
   initialOptions,
   initialBeneficiaires,
+  allowedBeneficiaires,
   submitLabel = "Valider ma réservation",
 }: {
   dateDebut: string;
@@ -70,6 +77,8 @@ export function ReservationBuilder({
   initialQuantities?: Record<string, number>;
   initialOptions?: Record<string, string[]>;
   initialBeneficiaires?: Record<string, Beneficiaire>;
+  /** Tarifs bénéficiaire autorisés pour le membre concerné par cette réservation. */
+  allowedBeneficiaires: Beneficiaire[];
   submitLabel?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
@@ -102,7 +111,7 @@ export function ReservationBuilder({
   };
 
   const beneficiaireOf = (item: BuilderItem): Beneficiaire => {
-    const choices = beneficiaireChoices(item);
+    const choices = beneficiaireChoices(item, allowedBeneficiaires);
     return beneficiaires[item.id] ?? choices[0]?.value ?? BENEFICIAIRES.CHATEAUBOURG;
   };
 
@@ -144,7 +153,7 @@ export function ReservationBuilder({
         <div className="space-y-3">
           {disponibles.map((item) => {
             const qty = quantities[item.id] ?? 0;
-            const choices = beneficiaireChoices(item);
+            const choices = beneficiaireChoices(item, allowedBeneficiaires);
             const chosenBenef = beneficiaireOf(item);
             return (
               <Card key={item.id} className="p-4">

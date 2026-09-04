@@ -7,7 +7,13 @@ import { reservationDatesSchema, fieldErrorsFrom } from "@/lib/validations";
 import { requireApprovedUser } from "@/lib/auth-guards";
 import { computeAvailability } from "@/lib/availability";
 import { parseDateInput, todayInput } from "@/lib/dates";
-import { RESERVATION_STATUS, ROLES } from "@/lib/constants";
+import {
+  RESERVATION_STATUS,
+  ROLES,
+  ALLOWED_BENEFICIAIRES,
+  type Beneficiaire,
+  type MemberCategory,
+} from "@/lib/constants";
 import { sendEmail, siteUrl } from "@/lib/email";
 import { formatDateLongue } from "@/lib/utils";
 
@@ -53,6 +59,7 @@ function collectDesiredItems(formData: FormData): DesiredItem[] {
 function buildItemsToCreate(
   desired: DesiredItem[],
   availability: Awaited<ReturnType<typeof computeAvailability>>,
+  allowedBeneficiaires: Beneficiaire[],
 ) {
   const byId = new Map(availability.map((a) => [a.equipment.id, a]));
   return desired.map((d) => {
@@ -69,6 +76,13 @@ function buildItemsToCreate(
       if (!d.beneficiaire) {
         throw new Error(
           `« ${a.equipment.nom} » : indiquez pour qui la réservation est faite.`,
+        );
+      }
+      // Sécurité : on ne fait pas confiance au formulaire, on revérifie que
+      // ce bénéficiaire est bien autorisé pour la catégorie du membre.
+      if (!allowedBeneficiaires.includes(d.beneficiaire as Beneficiaire)) {
+        throw new Error(
+          `« ${a.equipment.nom} » : ce tarif n'est pas autorisé pour votre catégorie de membre.`,
         );
       }
       beneficiaire = d.beneficiaire;
@@ -119,6 +133,13 @@ export async function createReservation(
     return { error: "Sélectionnez au moins un matériel." };
   }
 
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { categorie: true },
+  });
+  const allowedBeneficiaires =
+    ALLOWED_BENEFICIAIRES[(currentUser?.categorie as MemberCategory) ?? "CHATEAUBOURG"];
+
   try {
     // Transaction : on revérifie les disponibilités AU MOMENT de créer,
     // ce qui empêche deux réservations concurrentes de dépasser le stock.
@@ -126,7 +147,7 @@ export async function createReservation(
       const availability = await computeAvailability(dateDebut, dateFin, {
         client: tx,
       });
-      const itemsToCreate = buildItemsToCreate(desired, availability);
+      const itemsToCreate = buildItemsToCreate(desired, availability, allowedBeneficiaires);
 
       await tx.reservation.create({
         data: {
@@ -179,7 +200,10 @@ export async function updateReservation(
   const id = String(formData.get("reservationId") ?? "");
   if (!id) return { error: "Réservation introuvable." };
 
-  const existing = await prisma.reservation.findUnique({ where: { id } });
+  const existing = await prisma.reservation.findUnique({
+    where: { id },
+    include: { user: { select: { categorie: true } } },
+  });
   if (!existing) return { error: "Réservation introuvable." };
 
   if (existing.userId !== session.user.id && !isAdmin) {
@@ -217,6 +241,11 @@ export async function updateReservation(
     return { error: "Sélectionnez au moins un matériel." };
   }
 
+  const allowedBeneficiaires =
+    ALLOWED_BENEFICIAIRES[
+      (existing.user.categorie as MemberCategory) ?? "CHATEAUBOURG"
+    ];
+
   try {
     await prisma.$transaction(async (tx) => {
       // On exclut la réservation en cours de modification du calcul,
@@ -225,7 +254,7 @@ export async function updateReservation(
         client: tx,
         excludeReservationId: id,
       });
-      const itemsToCreate = buildItemsToCreate(desired, availability);
+      const itemsToCreate = buildItemsToCreate(desired, availability, allowedBeneficiaires);
 
       await tx.reservationItem.deleteMany({ where: { reservationId: id } });
       await tx.reservation.update({

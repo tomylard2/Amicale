@@ -17,7 +17,13 @@ import {
   toDateInput,
   todayInput,
 } from "@/lib/dates";
-import { RESERVATION_STATUS, ROLES, type Beneficiaire } from "@/lib/constants";
+import {
+  RESERVATION_STATUS,
+  ROLES,
+  ALLOWED_BENEFICIAIRES,
+  type Beneficiaire,
+  type MemberCategory,
+} from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Modifier la réservation",
@@ -36,9 +42,14 @@ export default async function ModifierReservationPage({
 
   const reservation = await prisma.reservation.findUnique({
     where: { id },
-    include: { items: true },
+    include: { items: true, user: { select: { categorie: true } } },
   });
   if (!reservation) notFound();
+
+  const allowedBeneficiaires =
+    ALLOWED_BENEFICIAIRES[
+      (reservation.user.categorie as MemberCategory) ?? "CHATEAUBOURG"
+    ];
 
   const isAdmin = session!.user.role === ROLES.ADMIN;
   if (reservation.userId !== session!.user.id && !isAdmin) notFound();
@@ -128,6 +139,7 @@ export default async function ModifierReservationPage({
         initialQuantities={initialQuantities}
         initialOptions={initialOptions}
         initialBeneficiaires={initialBeneficiaires}
+        allowedBeneficiaires={allowedBeneficiaires}
         submitLabel="Enregistrer les modifications"
       />
     </div>

@@ -1,19 +1,35 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatEuros } from "@/lib/utils";
+import {
+  ALLOWED_BENEFICIAIRES,
+  BENEFICIAIRE_ORDER,
+  BENEFICIAIRE_LABELS,
+  type MemberCategory,
+} from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Catalogue du matériel",
 };
 
 export default async function CataloguePage() {
-  const materiels = await prisma.equipment.findMany({
-    where: { isActive: true },
-    orderBy: { nom: "asc" },
-  });
+  const session = await auth();
+  const [materiels, currentUser] = await Promise.all([
+    prisma.equipment.findMany({
+      where: { isActive: true },
+      orderBy: { nom: "asc" },
+    }),
+    prisma.user.findUnique({
+      where: { id: session!.user.id },
+      select: { categorie: true },
+    }),
+  ]);
+  const allowedBeneficiaires =
+    ALLOWED_BENEFICIAIRES[(currentUser?.categorie as MemberCategory) ?? "CHATEAUBOURG"];
 
   return (
     <div className="space-y-6">
@@ -63,13 +79,33 @@ export default async function CataloguePage() {
                     {m.description}
                   </p>
                 )}
-                {m.prix > 0 && (
-                  <p className="text-xs font-medium mt-3">
-                    Prix :{" "}
-                    {m.prixExponentiel
-                      ? `${formatEuros(m.prix)} / unité`
-                      : `${formatEuros(m.prix)} (forfait)`}
-                  </p>
+                {m.tarifBeneficiaire ? (
+                  <div className="text-xs font-medium mt-3 space-y-0.5">
+                    {BENEFICIAIRE_ORDER.filter(
+                      (b) => allowedBeneficiaires.includes(b),
+                    ).map((b) => {
+                      const prix = {
+                        CHATEAUBOURG: m.prixAmicaleChateaubourg,
+                        AUTRE_AMICALE: m.prixAutreAmicale,
+                        AUTRE_ASSOCIATION: m.prixAutreAssociation,
+                      }[b];
+                      if (prix == null) return null;
+                      return (
+                        <p key={b}>
+                          {BENEFICIAIRE_LABELS[b]} : {formatEuros(prix)}
+                        </p>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  m.prix > 0 && (
+                    <p className="text-xs font-medium mt-3">
+                      Prix :{" "}
+                      {m.prixExponentiel
+                        ? `${formatEuros(m.prix)} / unité`
+                        : `${formatEuros(m.prix)} (forfait)`}
+                    </p>
+                  )
                 )}
                 {m.caution != null && (
                   <p className="text-xs text-muted-foreground mt-1">

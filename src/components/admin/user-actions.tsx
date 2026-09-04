@@ -1,13 +1,45 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import {
   approveUser,
   toggleUserActive,
   deleteUser,
   setUserRole,
+  setUserCategory,
 } from "@/lib/actions/admin-users";
-import { ROLES } from "@/lib/constants";
+import {
+  ROLES,
+  MEMBER_CATEGORY_ORDER,
+  MEMBER_CATEGORY_LABELS,
+} from "@/lib/constants";
+
+export function CategorySelect({
+  id,
+  categorie,
+}: {
+  id: string;
+  categorie: string;
+}) {
+  const formRef = useRef<HTMLFormElement>(null);
+  return (
+    <form ref={formRef} action={setUserCategory}>
+      <input type="hidden" name="id" value={id} />
+      <select
+        name="categorie"
+        defaultValue={categorie}
+        onChange={() => formRef.current?.requestSubmit()}
+        className="h-8 rounded-md border border-input bg-card px-2 text-xs"
+      >
+        {MEMBER_CATEGORY_ORDER.map((c) => (
+          <option key={c} value={c}>
+            {MEMBER_CATEGORY_LABELS[c]}
+          </option>
+        ))}
+      </select>
+    </form>
+  );
+}
 
 export function ChangeRoleButton({
   id,

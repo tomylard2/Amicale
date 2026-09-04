@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { InvoiceForm } from "@/components/admin/invoice-form";
+import { lineItemPrice } from "@/lib/utils";
+import { BENEFICIAIRE_LABELS, type Beneficiaire } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Nouvelle facture",
@@ -29,13 +31,17 @@ export default async function NouvelleFacturePage({
 
     initialClientNom = `${reservation.user.prenom} ${reservation.user.nom}`;
     initialClientEmail = reservation.user.email;
-    initialItems = reservation.items.map((it) => ({
-      description: it.equipment.nom,
-      quantite: it.quantite,
-      montant: it.equipment.prixExponentiel
-        ? it.equipment.prix * it.quantite
-        : it.equipment.prix,
-    }));
+    initialItems = reservation.items.map((it) => {
+      let description = it.equipment.nom;
+      if (it.beneficiaire) {
+        description += ` (${BENEFICIAIRE_LABELS[it.beneficiaire as Beneficiaire] ?? it.beneficiaire})`;
+      }
+      return {
+        description,
+        quantite: it.quantite,
+        montant: lineItemPrice(it),
+      };
+    });
   }
 
   return (

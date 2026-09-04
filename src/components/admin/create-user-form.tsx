@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createUserByAdmin } from "@/lib/actions/admin-users";
+import { MEMBER_CATEGORY_ORDER, MEMBER_CATEGORY_LABELS } from "@/lib/constants";
 
 function FieldError({ messages }: { messages?: string[] }) {
   if (!messages?.length) return null;
@@ -75,6 +76,27 @@ export function CreateUserForm() {
           </select>
           <FieldError messages={state.fieldErrors?.role} />
         </div>
+      </div>
+
+      <div>
+        <Label htmlFor="categorie">Catégorie *</Label>
+        <select
+          id="categorie"
+          name="categorie"
+          defaultValue="CHATEAUBOURG"
+          className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm"
+        >
+          {MEMBER_CATEGORY_ORDER.map((c) => (
+            <option key={c} value={c}>
+              {MEMBER_CATEGORY_LABELS[c]}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Détermine les tarifs bénéficiaire que ce membre pourra choisir lors
+          d&apos;une réservation.
+        </p>
+        <FieldError messages={state.fieldErrors?.categorie} />
       </div>
 
       <div className="flex items-center gap-3 pt-2">

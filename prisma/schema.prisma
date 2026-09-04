@@ -26,6 +26,10 @@ model User {
   role         String   @default("USER") // USER | ADMIN
   isActive     Boolean  @default(true) // false = compte désactivé par l'admin
   isApproved   Boolean  @default(false) // false = en attente de validation admin
+  // Catégorie du membre, attribuée par l'admin : détermine quels tarifs
+  // bénéficiaire (CHATEAUBOURG/AUTRE_AMICALE/AUTRE_ASSOCIATION) il peut
+  // choisir lors d'une réservation (voir ALLOWED_BENEFICIAIRES dans constants.ts)
+  categorie    String   @default("CHATEAUBOURG")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

@@ -63,6 +63,10 @@ export const adminCreateUserSchema = z.object({
     .string()
     .min(8, "Le mot de passe doit contenir au moins 8 caractères"),
   role: z.enum(["USER", "ADMIN"], { message: "Rôle invalide" }),
+  categorie: z.enum(
+    ["CHATEAUBOURG", "RETRAITE_CHATEAUBOURG", "DOMAGNE", "SERVON", "AUTRE"],
+    { message: "Catégorie invalide" },
+  ),
 });
 
 export type AdminCreateUserInput = z.infer<typeof adminCreateUserSchema>;
